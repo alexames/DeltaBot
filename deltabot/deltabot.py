@@ -297,7 +297,10 @@ class DeltaBot(object):
         """
         logging.info("Getting all comments in thread.")
         root = self.get_root_comment(comment)
-        stack = [root]
+        if root is not None:
+            stack = [root]
+        else:
+            stack = []
         retval = []
         while stack != []:
             item = stack.pop(0)
