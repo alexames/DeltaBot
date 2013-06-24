@@ -4,4 +4,4 @@
 
 *.idea
 
-*\.idea\*
+.idea/*
