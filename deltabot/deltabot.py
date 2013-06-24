@@ -105,7 +105,7 @@ class DeltaBot(object):
                 # see if bot already confirmed
                 replyers = [c.author.name.lower() for c in comment.replies if c.author]
                 if self.reddit.get_info(thing_id=comment.parent_id).author == comment.author:
-                    logging.debug('commentor responded to self with delta')
+                    logging.debug('commenter responded to self with delta')
                     return False
                 if check_confirmed:
                     if self.config.account['username'].lower() in replyers:
@@ -123,7 +123,7 @@ class DeltaBot(object):
     def strip_quotations(self, comment_body):
         """Delete quotations from reddit posts (by > token)"""
         # TODO: this will strip ANY paragraph with ANY > symbol in it,
-        # not just >s that indicate blockquotes. Needs refinement.
+        # not just >s that indicate block quotes. Needs refinement.
         split_comment = comment_body.split("\n")
         stripped_comment = ""
         for paragraph in split_comment:
@@ -167,7 +167,7 @@ class DeltaBot(object):
                 logging.debug('reply to bot detected, awarding no points')
                 continue
             if self.is_parents_thread(comment):
-                logging.debug("Submisson's author can't get delta in own thread.")
+                logging.debug("Submission's author can't get delta in own thread.")
                 continue
             if self.multiple_deltas_thread(comment):
                 logging.debug("Disallowing comment: same user, multiple deltas, same thread")
