@@ -207,8 +207,8 @@ class DeltaBot(object):
     def get_flair_number(self, dic):
         """Get numeric value from flair"""
         try:
-            num = int(dic[u'flair_text'])
-        except:
+            num = int(dic[u'flair_text'].replace(u'∆', u''))
+        except ValueError:
             num = None
             print "Viva la infinity!"
         return num
