@@ -300,13 +300,21 @@ class DeltaBot(object):
         if root is not None:
             stack = [root]
         else:
+            logging.warning("Root was returned as None-Type in function self.get_thread_comments()")
             stack = []
         retval = []
         while stack != []:
             item = stack.pop(0)
             if type(item) is praw.objects.MoreComments:
-                for comment in item.comments():
-                    stack.append(comment)
+                try:
+                    for comment in item.comments():
+                        stack.append(comment)
+                except TypeError:
+                    if item.comments() is None:
+                        logging.warning("MoreComments object was seen as NoneType")
+                        print "Error: NoneType comment"
+                    else:
+                        raise TypeError("item.comments() is of type {0}".format(type(item.comments())))
                 continue
             for reply in item.replies:
                 if type(reply) is praw.objects.MoreComments:
