@@ -34,7 +34,7 @@ TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
 TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
 
-class Bot(object):
+class DeltaBot(object):
     def __init__(self):
         logging.info('connecting to reddit')
         self.reddit = praw.Reddit(SUBREDDIT_NAME + ' bot')
@@ -384,17 +384,3 @@ class Bot(object):
             logging.debug('sleeping %0.1fs' % sleep_time)
             logging.debug("Current ID is %s\n\n" % before_id)
             time.sleep(sleep_time)
-
-
-def sandbox():
-    #FOR TESTING. Put whatever here.
-    bot = Bot()
-
-
-def main():
-    bot = Bot()
-    bot.go()
-
-if __name__ == '__main__':
-    main()
-    #sandbox()
