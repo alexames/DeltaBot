@@ -5,3 +5,5 @@
 *.idea
 
 .idea/*
+
+config/config.json

@@ -6,16 +6,14 @@ import re
 import praw
 import pprint
 import urllib2
+import json
 
-# change this as necessary
-SUBREDDIT_NAME = 'changemyview'
-BOT_ACCOUNT = ['deltabot', 'PASSWORD']
 # 30 seconds for now, change to 60*60 for 1 hour
 PERIOD_SCAN = 60*30
 
 # these can optionally be changed
 TOKENS = [u'∆', u'&amp;#8710;']
-MSG_CONFIRM = 'Confirmed: 1 delta awarded to /u/%s'
+
 # unnecessary now that we have wiki solution
 #TRACKER_URL = "http://www.reddit.com/r/snorrrlax/comments/1adxhd/deltabots_delta_tracker/"
 
@@ -33,19 +31,33 @@ TABLE_HEAD = '\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |'
 TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
 TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
+# This object holds the configuration options for the bot
+class Config(object):
+
+    def __init__(self, configFile):
+        self.attrs = json.load(open(configFile))
+
+    def __getattr__(self, name):
+        return self.attrs[name]
+
 
 class DeltaBot(object):
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
+
         logging.info('connecting to reddit')
-        self.reddit = praw.Reddit(SUBREDDIT_NAME + ' bot')
-        self.reddit.login(*BOT_ACCOUNT)
-        self.subreddit = self.reddit.get_subreddit(SUBREDDIT_NAME)
+
+        self.reddit    = praw.Reddit(self.config.subreddit + ' bot')
+
+        self.reddit.login(*[self.config.account['username'], self.config.account['password']])
+
+        self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
 
     def award_delta(self, parent, comment):
         """Awards a delta"""
         if self.add_points(parent.author):
             self.update_delta_tracker(comment)
-            comment.reply(MSG_CONFIRM % parent.author).distinguish()
+            comment.reply(self.config.messages[0] % parent.author).distinguish()
             logging.debug('confirmation message sent')
         else:
             logging.warn('non-numeric flair for user %s, skipping adding points' % comment.author.name)
@@ -96,7 +108,7 @@ class DeltaBot(object):
                     logging.debug('commentor responded to self with delta')
                     return False
                 if check_confirmed:
-                    if BOT_ACCOUNT[0].lower() in replyers:
+                    if self.config.account['username'].lower() in replyers:
                         logging.debug('already confirmed')
                         return False
                 # get parent
@@ -151,7 +163,7 @@ class DeltaBot(object):
             if not parent:
                 continue
             logging.info('new delta comment %s by %s to %s found' % (comment.name, comment.author.name, parent.author.name))
-            if parent.author.name.lower() == BOT_ACCOUNT[0].lower():
+            if parent.author.name.lower() == self.config.account['username'].lower():
                 logging.debug('reply to bot detected, awarding no points')
                 continue
             if self.is_parents_thread(comment):
@@ -347,12 +359,12 @@ class DeltaBot(object):
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name.lower()
         try:
-            user_wiki_page = self.reddit.get_wiki_page(SUBREDDIT_NAME, parent_author)
+            user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit, parent_author)
             if user_wiki_page.page == parent_author:
                 #this is the parent's wiki page, update it.
                 add_link = "\n%s -- %s" % (comment_submission_title, comment_submission_url)
                 new_content = user_wiki_page.content_md + add_link
-                self.reddit.edit_wiki_page(SUBREDDIT_NAME, user_wiki_page.page, new_content,
+                self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, new_content,
                                       "Updated delta links.")
                 logging.info("Updated delta tracker page for %s" % parent_author)
         except:
@@ -360,17 +372,17 @@ class DeltaBot(object):
             initial_text = "User %s received deltas in the following threads:\n\n" % parent_author
             add_link = "\n%s -- %s" % (comment_submission_title, comment_submission_url)
             full_update = initial_text + add_link
-            self.reddit.edit_wiki_page(SUBREDDIT_NAME, parent_author, full_update,
+            self.reddit.edit_wiki_page(self.config.subreddit, parent_author, full_update,
                                        "Created user's delta links page.")
             logging.info("Created tracker page for %s" % parent_author)
             #Now add link to user's thread to the main page.
-            delta_tracker_page = self.reddit.get_wiki_page(SUBREDDIT_NAME, "delta_tracker")
+            delta_tracker_page = self.reddit.get_wiki_page(self.config.subreddit, "delta_tracker")
             delta_tracker_page_body = delta_tracker_page.content_md
-            authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (SUBREDDIT_NAME,
+            authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit,
                            parent_author)
             new_link = "\n%s -- %s" % (parent_author, authors_page)
             new_content = delta_tracker_page_body + new_link
-            self.reddit.edit_wiki_page(SUBREDDIT_NAME, "delta_tracker", new_content,
+            self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content,
                                        "Updated tracker page.")
             logging.info("Updated delta_tracker to link to %s's page" % parent_author)
 

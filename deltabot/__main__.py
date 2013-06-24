@@ -1,5 +1,6 @@
 import logging
 import deltabot
+import config
 
 def sandbox():
     #FOR TESTING. Put whatever here.
@@ -7,7 +8,8 @@ def sandbox():
 
 
 def main():
-    bot = deltabot.DeltaBot()
+    config = deltabot.Config('./config/config.json')
+    bot = deltabot.DeltaBot(config)
     bot.go()
 
 if __name__ == '__main__':
