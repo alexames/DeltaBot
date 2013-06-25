@@ -6,13 +6,5 @@
     },
     "messages": [
         "Confirmed: 1 delta awarded to /u/%s"
-    ],
-    "tokens": [u'∆', u'&amp;#8710;'],
-    "periodscan": 60*30,
-    "regex": u'(?<!["\'])%s(?!["\'])',
-    "table":{
-            "head" : "\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |"
-            "leader_entry" : "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
-            "table_entry" : "\n| %s | /u/%s | [%s](// "deltas received") |"
-    }
+    ]
 }

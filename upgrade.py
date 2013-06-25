@@ -6,7 +6,7 @@ SUBREDDIT_NAME = 'changemyview'
 reddit = praw.Reddit("Updating flair format for users.")
 reddit.login('deltabot', raw_input("Please enter password for bot: "))
 subreddit = reddit.get_subreddit(SUBREDDIT_NAME)
-print "Login successful\n"
+print "Login successful"
 
 
 #UPDATE FLAIR FORMAT START

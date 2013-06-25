@@ -8,10 +8,28 @@ import pprint
 import urllib2
 import json
 
+# 30 seconds for now, change to 60*60 for 1 hour
+PERIOD_SCAN = 60*30
+
+# these can optionally be changed
+TOKENS = [u'∆', u'&amp;#8710;']
+
+# unnecessary now that we have wiki solution
+#TRACKER_URL = "http://www.reddit.com/r/snorrrlax/comments/1adxhd/deltabots_delta_tracker/"
+
+# ignore everything else
+###########################
+
+TOKEN_REGEX = u'(?<!["\'])%s(?!["\'])'
 
 # set up logging
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('requests').setLevel(logging.ERROR) # hide messages from requests
+
+#strings for table updating
+TABLE_HEAD = '\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |'
+TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
+TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
 # This object holds the configuration options for the bot
 class Config(object):
@@ -81,8 +99,8 @@ class DeltaBot(object):
         # strip any blockquotes so we don't count deltas twice
         comment.body = self.strip_quotations(comment.body)
         # search for token
-        for token in self.config.tokens:
-            REGEX = self.config.regex % token
+        for token in TOKENS:
+            REGEX = TOKEN_REGEX % token
             if re.search(REGEX, comment.body):
                 # see if bot already confirmed
                 replyers = [c.author.name.lower() for c in comment.replies if c.author]
@@ -177,11 +195,11 @@ class DeltaBot(object):
     def update_top_ten_list(self):
         """Update the top 10 list with highest delta earners."""
         top_deltas = self.get_top_ten_deltas()
-        delta_table = ["\n\n**Top Ten Viewchangers**", self.config.table["head"],
-                       self.config.table["leader_entry"] % ((top_deltas[0][u'user'], top_deltas[0][u'flair_text']))]
+        delta_table = ["\n\n**Top Ten Viewchangers**", TABLE_HEAD,
+                       TABLE_LEADER_ENTRY % ((top_deltas[0][u'user'], top_deltas[0][u'flair_text']))]
 
         for i in range(9):
-            delta_table.append(self.config.table["table_entry"] % ((i+2, top_deltas[i+1][u'user'], top_deltas[i+1][u'flair_text'])))
+            delta_table.append(TABLE_ENTRY % ((i+2, top_deltas[i+1][u'user'], top_deltas[i+1][u'flair_text'])))
 
         settings = self.subreddit.get_settings()
         old_desc = settings[u'description']
@@ -370,7 +388,7 @@ class DeltaBot(object):
 
     def go(self):
         """Start DeltaBot"""
-        logging.info('starting with %0.1fs scan period\n\n' % self.config.periodscan)
+        logging.info('starting with %0.1fs scan period\n\n' % PERIOD_SCAN)
         before_id = self.get_previous_comment_id()
         #before_id = None
         logging.info("We're starting from this ID: %s\n\n" % before_id)
@@ -385,7 +403,7 @@ class DeltaBot(object):
             if before_id != temp_id:
                 self.write_previous_comment_id(before_id)
                 temp_id = before_id
-            sleep_time = max(0, self.config.periodscan - (time.time() - start_time))
+            sleep_time = max(0, PERIOD_SCAN - (time.time() - start_time))
             logging.debug('sleeping %0.1fs' % sleep_time)
             logging.debug("Current ID is %s\n\n" % before_id)
             time.sleep(sleep_time)
