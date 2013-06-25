@@ -12,7 +12,7 @@ import json
 PERIOD_SCAN = 60*30
 
 # these can optionally be changed
-TOKENS = [u'∆', u'&amp;#8710;']
+TOKENS = [u'∆', u'&amp;#8710;', u'Δ']
 
 # unnecessary now that we have wiki solution
 #TRACKER_URL = "http://www.reddit.com/r/snorrrlax/comments/1adxhd/deltabots_delta_tracker/"
@@ -370,7 +370,7 @@ class DeltaBot(object):
         except:
             #page doesn't exist, create it
             initial_text = "User %s received deltas in the following threads:\n\n" % parent_author
-            add_link = "\n%s -- %s" % (comment_submission_title, comment_submission_url)
+            add_link = "\n* %s -- %s" % (comment_submission_title, comment_submission_url)
             full_update = initial_text + add_link
             self.reddit.edit_wiki_page(self.config.subreddit, parent_author, full_update,
                                        "Created user's delta links page.")
@@ -380,7 +380,7 @@ class DeltaBot(object):
             delta_tracker_page_body = delta_tracker_page.content_md
             authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit,
                            parent_author)
-            new_link = "\n%s -- %s" % (parent_author, authors_page)
+            new_link = "\n* %s -- %s" % (parent_author, authors_page)
             new_content = delta_tracker_page_body + new_link
             self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content,
                                        "Updated tracker page.")
