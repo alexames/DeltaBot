@@ -12,15 +12,22 @@ import json
 PERIOD_SCAN = 60*30
 
 # these can optionally be changed
+<<<<<<< HEAD
 TOKENS = [u'∆', u'&amp;#8710;']
 
+=======
+TOKENS = [u'∆', u'Δ', u'&amp;#8710;']
+
+MSG_CONFIRM = 'Confirmed: 1 delta awarded to /u/%s'
+>>>>>>> 6d86d8be234d57a9cfe39da66a836cc5f233422e
 # unnecessary now that we have wiki solution
 #TRACKER_URL = "http://www.reddit.com/r/snorrrlax/comments/1adxhd/deltabots_delta_tracker/"
 
 # ignore everything else
 ###########################
 
-TOKEN_REGEX = u'(?<!["\'])%s(?!["\'])'
+TOKEN_GROUP = u'(' + u'|'.join(TOKENS) + u')'
+TOKEN_REGEX = u'(?<!["\'])%s(?!["\'])' % TOKEN_GROUP
 
 # set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -99,6 +106,7 @@ class DeltaBot(object):
         # strip any blockquotes so we don't count deltas twice
         comment.body = self.strip_quotations(comment.body)
         # search for token
+<<<<<<< HEAD
         for token in TOKENS:
             REGEX = TOKEN_REGEX % token
             if re.search(REGEX, comment.body):
@@ -114,9 +122,25 @@ class DeltaBot(object):
                 # get parent
                 parent = self.reddit.get_info(thing_id=comment.parent_id)
                 if parent.author is None:
+=======
+        if re.search(TOKEN_REGEX, comment.body):
+            # see if bot already confirmed
+            replyers = [c.author.name.lower() for c in comment.replies if c.author]
+            if self.reddit.get_info(thing_id=comment.parent_id).author == comment.author:
+                logging.debug('commentor responded to self with delta')
+                return False
+            if check_confirmed:
+                if BOT_ACCOUNT[0].lower() in replyers:
+                    logging.debug('already confirmed')
+>>>>>>> 6d86d8be234d57a9cfe39da66a836cc5f233422e
                     return False
-                else:
-                    return parent
+            # get parent
+            parent = self.reddit.get_info(thing_id=comment.parent_id)
+            if parent.author is None:
+                logging.debug('parent.author is None')
+                return False
+            else:
+                return parent
         logging.debug('delta token not found')
         return False
 
