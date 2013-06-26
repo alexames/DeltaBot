@@ -6,7 +6,6 @@ import re
 import praw
 import pprint
 import urllib2
-import json
 
 # 30 seconds for now, change to 60*60 for 1 hour
 PERIOD_SCAN = 60*30
@@ -33,23 +32,15 @@ TABLE_HEAD = '\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |'
 TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
 TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
-# This object holds the configuration options for the bot
-class Config(object):
-
-    def __init__(self, configFile):
-        self.attrs = json.load(open(configFile))
-
-    def __getattr__(self, name):
-        return self.attrs[name]
-
-
 class DeltaBot(object):
-    def __init__(self, config):
+    def __init__(self, config, reddit = False):
         self.config = config
 
         logging.info('connecting to reddit')
-
-        self.reddit    = praw.Reddit(self.config.subreddit + ' bot')
+        if not reddit:
+            self.reddit = praw.Reddit(self.config.subreddit + ' bot')
+        else:
+            self.reddit = reddit
 
         self.reddit.login(*[self.config.account['username'], self.config.account['password']])
 

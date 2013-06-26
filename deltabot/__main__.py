@@ -8,8 +8,8 @@ def sandbox():
 
 
 def main():
-    config = deltabot.Config('./config/config.json')
-    bot = deltabot.DeltaBot(config)
+    c   = config.Config('./config/config.json')
+    bot = deltabot.DeltaBot(c)
     bot.go()
 
 if __name__ == '__main__':
