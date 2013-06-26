@@ -330,9 +330,16 @@ class DeltaBot(object):
                 continue
             for reply in item.replies:
                 if type(reply) is praw.objects.MoreComments:
-                    new_comments = reply.comments()
-                    for comment in new_comments:
-                        stack.append(comment)
+                    try:
+                        new_comments = reply.comments()
+                        for comment in new_comments:
+                            stack.append(comment)
+                    except:
+                        logging.debug('item:{0}'.format(item))
+                        logging.debug('reply:{0}').format(reply)
+                        logging.debug('reply.submission:{0}').format(reply.submission)
+                        logging.debug('reply.comments(): {0}').format(reply.comments)
+
                 stack.append(reply)
             retval.append(item)
         return retval
