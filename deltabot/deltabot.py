@@ -40,7 +40,7 @@ class DeltaBot(object):
         # use passed reddit if one was given
         self.reddit    = praw.Reddit(self.config.subreddit + ' bot') if not reddit else reddit
 
-        self.reddit.login(*[self.config.account['username'], self.config.account['password']])
+        self.reddit.login(self.config.account['username'], self.config.account['password'])
 
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
 
