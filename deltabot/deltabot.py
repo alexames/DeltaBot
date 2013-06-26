@@ -15,7 +15,6 @@ PERIOD_SCAN = 60*30
 
 TOKENS = [u'∆', u'&amp;#8710;', u'Δ']
 
-MSG_CONFIRM = 'Confirmed: 1 delta awarded to /u/%s'
 # unnecessary now that we have wiki solution
 #TRACKER_URL = "http://www.reddit.com/r/snorrrlax/comments/1adxhd/deltabots_delta_tracker/"
 
