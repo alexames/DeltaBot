@@ -24,7 +24,6 @@ TOKEN_GROUP = u'(' + u'|'.join(TOKENS) + u')'
 TOKEN_REGEX = u'(?<!["\'])%s(?!["\'])' % TOKEN_GROUP
 
 # set up logging
-logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('requests').setLevel(logging.ERROR) # hide messages from requests
 
 #strings for table updating
@@ -33,7 +32,7 @@ TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
 TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
 class DeltaBot(object):
-    def __init__(self, config, reddit = False):
+    def __init__(self, config, reddit = None):
         self.config = config
 
         logging.info('connecting to reddit')
