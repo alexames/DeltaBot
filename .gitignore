@@ -1,11 +1,16 @@
-*.pyc
-
+# development environment
 *.sublime-workspace
-
 *.idea
-
 .idea/*
 
+# compiled
+*.pyc
+
+# config files
 config/config.json
 
+# temp files
 prev_id.txt
+
+# vagrant
+.vagrant
