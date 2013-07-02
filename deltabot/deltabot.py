@@ -32,14 +32,11 @@ TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
 TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
 class DeltaBot(object):
-    def __init__(self, config, reddit = None):
+    def __init__(self, config):
         self.config = config
 
         logging.info('connecting to reddit')
-        if not reddit:
-            self.reddit = praw.Reddit(self.config.subreddit + ' bot')
-        else:
-            self.reddit = reddit
+        self.reddit = praw.Reddit(self.config.subreddit + ' bot', site_name=config.site_name)
 
         self.reddit.login(*[self.config.account['username'], self.config.account['password']])
 

@@ -11,4 +11,4 @@ class Config(object):
             self.attrs = json.loads(configFile)
 
     def __getattr__(self, name):
-        return self.attrs[name]
+        return self.attrs.get(name)
