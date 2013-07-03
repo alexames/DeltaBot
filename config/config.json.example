@@ -8,6 +8,6 @@
         "Confirmed: 1 delta awarded to /u/%s"
         "You cannot award OP a delta as we feel allowing so would send the wrong message. For more information, please see our wiki."
         "You have already awarded /u/%s a delta in this comment thread."
-        "This delta is currently disallowed as it either contains no or little text. Please include an explanation for how that comment changed your view. If you edit this in, please reply to my comment and I will rescan yours. Thank you."
+        "This delta is currently disallowed as your comment contains either no or little text. Please include an explanation for how /u/%s changed your view. If you edit this in, please reply to my comment and I will rescan yours. Thank you."
     ]
 }
