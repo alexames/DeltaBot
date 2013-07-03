@@ -128,15 +128,14 @@ class DeltaBot(object):
         else:
             limit = None
         newest_comment = None
+        
         if comments == None:
             comments = [c for c in self.subreddit.get_comments(params={'before': before_id}, limit=limit)]
         logging.debug('scanning comments newer than %s' % str(before_id))
         for comment in comments:
             if type(comment) is praw.objects.MoreComments:
-                new_comments = comment.comments()
                 print "scanning a MoreComments object"
-                for new_comment in new_comments:
-                    self.scan(comments = new_comment)
+                self.scan(comments = comment.comments())
 
             if comment == None:
                 logging.debug('This comment was deleted.')
@@ -255,8 +254,7 @@ class DeltaBot(object):
         logging.info("Checking for multiple deltas.")
         comments = self.get_thread_comments(orig_comment)
         if type(comments) is praw.objects.MoreComments:
-            more_comments = comments.comments
-            comments = more_comments
+            comments = comments.comments()
         users = {}
         for comment in comments:
             if comment.author != None:
