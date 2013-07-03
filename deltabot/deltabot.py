@@ -122,19 +122,22 @@ class DeltaBot(object):
         return stripped_comment
     #TODO: This function is way, way too big and can be modularized. Do that.
 
-    def scan(self, before_id=None):
+    def scan(self, comments = None, before_id=None):
         if before_id is None:
             limit = 500
         else:
             limit = None
         newest_comment = None
+        if comments == None:
+            comments = [c for c in self.subreddit.get_comments(params={'before': before_id}, limit=limit)]
         logging.debug('scanning comments newer than %s' % str(before_id))
-        for comment in self.subreddit.get_comments(params={'before': before_id}, limit=limit):
+        for comment in comments:
             if type(comment) is praw.objects.MoreComments:
-                new_comments = comment.replies
+                new_comments = [self.get_info(thing_id=u't1_'+ i) for i in comment.children]
                 print "scanning a MoreComments object"
-                self.scan(new_comments[0].name)  # NOTE: This was fixed from a non-operating version, and might
-                #not perform as wanted. I'm not sure if this will create a scan loop. -Acebulf
+                for new_comment in new_comments:
+                    self.scan(comments = new_comment)
+                    # Correctly opens MoreComments, but not sure if before_id logging will be preserved. --Vaetrus
 
             if comment == None:
                 logging.debug('This comment was deleted.')
