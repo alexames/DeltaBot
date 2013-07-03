@@ -133,11 +133,10 @@ class DeltaBot(object):
         logging.debug('scanning comments newer than %s' % str(before_id))
         for comment in comments:
             if type(comment) is praw.objects.MoreComments:
-                new_comments = [self.get_info(thing_id=u't1_'+ i) for i in comment.children]
+                new_comments = comment.comments()
                 print "scanning a MoreComments object"
                 for new_comment in new_comments:
                     self.scan(comments = new_comment)
-                    # Correctly opens MoreComments, but not sure if before_id logging will be preserved. --Vaetrus
 
             if comment == None:
                 logging.debug('This comment was deleted.')
