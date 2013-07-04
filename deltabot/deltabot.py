@@ -128,15 +128,14 @@ class DeltaBot(object):
         else:
             limit = None
         newest_comment = None
+        
         if comments == None:
             comments = [c for c in self.subreddit.get_comments(params={'before': before_id}, limit=limit)]
         logging.debug('scanning comments newer than %s' % str(before_id))
         for comment in comments:
             if type(comment) is praw.objects.MoreComments:
-                new_comments = comment.comments()
-                print "scanning a MoreComments object"
-                for new_comment in new_comments:
-                    self.scan(comments = new_comment)
+                logging.debug("scanning a MoreComments object")
+                self.scan(comments = comment.comments())
 
             if comment == None:
                 logging.debug('This comment was deleted.')
@@ -145,7 +144,7 @@ class DeltaBot(object):
                 newest_comment = comment
 
             if comment.name == None or comment.author == None:
-                print "Author or comment has been deleted.\n"
+                logging.debug("Author or comment has been deleted.\n")
                 continue
             else:
                 logging.debug('scanning comment %s by %s' % (comment.name, comment.author.name))
@@ -255,8 +254,7 @@ class DeltaBot(object):
         logging.info("Checking for multiple deltas.")
         comments = self.get_thread_comments(orig_comment)
         if type(comments) is praw.objects.MoreComments:
-            more_comments = comments.comments
-            comments = more_comments
+            comments = comments.comments()
         users = {}
         for comment in comments:
             if comment.author != None:
@@ -277,8 +275,7 @@ class DeltaBot(object):
             item = stack.pop(0)
             try:
                 if not hasattr(item, 'replies'):
-                    print "No attribute .replies, probably a MoreComment"
-                    #this is a morecomments object
+                    logging.debug("No attribute .replies, probably a MoreComment")
                     comments = item.comments()
                     for reply in comments:
                         stack.append(reply)
@@ -350,6 +347,21 @@ class DeltaBot(object):
             return True
         else:
             return False
+
+    def message_commands(self):
+        """  Checks messages and takes appropriate actions. """
+    for msg in self.get_unread():
+            if msg.author.name not in self.config.mods:
+                msg.mark_as_read()
+                continue
+            if 'ScanComment' in msg.body:
+                comment_id = msg.body[msg.body.find("*")+1:msg.body.find("*",msg.body.find("*")+1)]
+                logging.debug('scanning {0} comment'.format(comment_id))
+                scan(comments = [self.user.get_info(thing_id=u'{0}'.format(comment_id)),])
+                msg.mark_as_read()
+            if 'DeleteDelta' in msg.body:
+                #get_flair_number(self, dic)
+                #add_points(redditor, num_points=1)
 
     def update_delta_tracker(self, comment):
         comment_submission = comment.submission
