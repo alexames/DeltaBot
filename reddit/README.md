@@ -24,15 +24,15 @@ By using the reddit development environment described here you will have a local
 
 ## State management
 
-When you first load reddit it will be clean and fresh new install.  However during unit testing it is important that the reddit installation is in a certain expected _state_.  The __pg_dump__ tool is used to create database snapshots which can be saved and loaded with the shell scripts _savestate.sh_ and _loadstate.sh_ respectively.  To use the scripts remote into the VM with _vagrant ssh_, navigate to the _/vagrant_ folder and run the scripts.  Below are some example uses
+When you first load reddit it will be clean and fresh new install.  However during unit testing it is important that the reddit installation is in a certain expected _state_.  The __pg_dump__ tool is used to create database snapshots which can be saved and loaded with the shell scripts _savestate.py_ and _loadstate.py_ respectively.  To use the scripts remote into the VM with _vagrant ssh_, navigate to the _/vagrant_ folder and run the scripts.  Below are some example uses
 
-    ./savestate.sh <state_name>
-    ./loadstate.sh <state_name>
+    ./savestate.py <state_name>
+    ./loadstate.py <state_name>
 
-    ./loadstate.sh testing       # load 'testing' state
+    ./loadstate.py testing       # load 'testing' state
 
     # make some changes
 
-    ./savestate.sh mikes_state   # save 'mikes_state' state
+    ./savestate.py mikes_state   # save 'mikes_state' state
 
-    ./loadstate.sh testing       # go back to the original 'testing' state
+    ./loadstate.py testing       # go back to the original 'testing' state
