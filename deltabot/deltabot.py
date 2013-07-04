@@ -46,7 +46,7 @@ class DeltaBot(object):
         """Awards a delta"""
         if self.add_points(parent.author):
             self.update_delta_tracker(comment)
-            comment.reply(self.config.messages[0] % parent.author).distinguish()
+            comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
             logging.debug('confirmation message sent')
         else:
             logging.warn('non-numeric flair for user %s, skipping adding points' % comment.author.name)
@@ -128,7 +128,7 @@ class DeltaBot(object):
         else:
             limit = None
         newest_comment = None
-        
+
         if comments == None:
             comments = [c for c in self.subreddit.get_comments(params={'before': before_id}, limit=limit)]
         logging.debug('scanning comments newer than %s' % str(before_id))
