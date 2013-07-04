@@ -8,6 +8,8 @@ import pprint
 import urllib2
 
 # 30 seconds for now, change to 60*60 for 1 hour
+##### Shouldn't this be 30 minutes? If 60*60 is 1 hr, and 60*30 is half that,
+##### How is 60*30 == 30 seconds?
 PERIOD_SCAN = 60*30
 
 # these can optionally be changed
@@ -24,7 +26,7 @@ TOKEN_GROUP = u'(' + u'|'.join(TOKENS) + u')'
 TOKEN_REGEX = u'(?<!["\'])%s(?!["\'])' % TOKEN_GROUP
 
 # set up logging
-logging.getLogger('requests').setLevel(logging.ERROR) # hide messages from requests
+logging.getLogger('requests').setLevel(logging.WARNING) # hide messages from requests
 
 #strings for table updating
 TABLE_HEAD = '\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |'
@@ -49,7 +51,7 @@ class DeltaBot(object):
             comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
             logging.debug('confirmation message sent')
         else:
-            logging.warn('non-numeric flair for user %s, skipping adding points' % comment.author.name)
+            logging.warning('non-numeric flair for user %s, skipping adding points' % comment.author.name)
 
     def add_points(self, redditor, num_points=1):
         """Recalculate a user's delta and update flair."""
@@ -111,7 +113,7 @@ class DeltaBot(object):
         return False
 
     def strip_quotations(self, comment_body):
-        """Delete quotations from reddit posts (by > token)"""
+        """ Delete quotations from reddit posts (by > token). """
         # TODO: this will strip ANY paragraph with ANY > symbol in it,
         # not just >s that indicate block quotes. Needs refinement.
         split_comment = comment_body.split("\n")
@@ -122,46 +124,40 @@ class DeltaBot(object):
         return stripped_comment
     #TODO: This function is way, way too big and can be modularized. Do that.
 
-    def scan(self, comments = None, before_id=None):
-        if before_id is None:
-            limit = 500
-        else:
-            limit = None
-        newest_comment = None
-
+    def scan(self, comments = None, before_id=None, limit = 500, newest_comment = None):
         if comments == None:
             comments = [c for c in self.subreddit.get_comments(params={'before': before_id}, limit=limit)]
         logging.debug('scanning comments newer than %s' % str(before_id))
         for comment in comments:
             if type(comment) is praw.objects.MoreComments:
+                # This shouldn't trigger since every comment is retrieved individually.
                 logging.debug("scanning a MoreComments object")
                 self.scan(comments = comment.comments())
 
-            if comment == None:
-                logging.debug('This comment was deleted.')
-                continue
-            if newest_comment is None:
-                newest_comment = comment
-
-            if comment.name == None or comment.author == None:
+            if comment == None or comment.name == None or comment.author == None:
                 logging.debug("Author or comment has been deleted.\n")
                 continue
             else:
-                logging.debug('scanning comment %s by %s' % (comment.name, comment.author.name))
+                logging.debug('scanning comment %s by %s' % \
+                    (comment.name, comment.author.name))
+                newest_comment = comment
 
             # see if there's a delta reply
             parent = self.find_delta(comment)
             if not parent:
                 continue
-            logging.info('new delta comment %s by %s to %s found' % (comment.name, comment.author.name, parent.author.name))
+            logging.info('new delta comment %s by %s to %s found' % \
+                (comment.name, comment.author.name, parent.author.name))
             if parent.author.name.lower() == self.config.account['username'].lower():
                 logging.debug('reply to bot detected, awarding no points')
                 continue
             if self.is_parents_thread(comment):
-                logging.debug("Submission's author can't get delta in own thread.")
+                logging.debug("Submission's author can't get delta in \
+                                own thread.")
                 continue
             if self.multiple_deltas_thread(comment):
-                logging.debug("Disallowing comment: same user, multiple deltas, same thread")
+                logging.debug("Disallowing comment: same user, multiple deltas, \
+                                same thread")
                 continue
 
             # add points
@@ -174,9 +170,13 @@ class DeltaBot(object):
         self.write_previous_comment_id(newest_comment.name)
         return newest_comment.name
 
+    def is_parents_thread(self, comment):
+        """ Does the thread belong to the comment's parent's author? """
+        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author:
+
     def get_top_ten_deltas(self):
-        """Get a list of the top 10 delta earners"""
-        flair_list = [flair for flair in self.subreddit.get_flair_list(limit=None)]
+        """ Get a list of the top 10 delta earners. """
+        flair_list = [f for f in self.subreddit.get_flair_list(limit=None)]
         flair_list = sorted(flair_list, key=self.get_flair_number)
         flair_list.reverse()
         while len(flair_list) < 10:
@@ -184,18 +184,21 @@ class DeltaBot(object):
         return flair_list[0:10]
 
     def update_top_ten_list(self):
-        """Update the top 10 list with highest delta earners."""
+        """ Update the top 10 list with highest delta earners. """
         top_deltas = self.get_top_ten_deltas()
         delta_table = ["\n\n**Top Ten Viewchangers**", TABLE_HEAD,
-                       TABLE_LEADER_ENTRY % ((top_deltas[0][u'user'], top_deltas[0][u'flair_text']))]
+                       TABLE_LEADER_ENTRY % ((top_deltas[0][u'user'], \
+                        top_deltas[0][u'flair_text']))]
 
         for i in range(9):
-            delta_table.append(TABLE_ENTRY % ((i+2, top_deltas[i+1][u'user'], top_deltas[i+1][u'flair_text'])))
+            delta_table.append(TABLE_ENTRY % ((i+2, top_deltas[i+1][u'user'], \
+                top_deltas[i+1][u'flair_text'])))
 
         settings = self.subreddit.get_settings()
         old_desc = settings[u'description']
-        # IMPORTANT: this splits the description on the _____ token. Don't use said
-        # token for anything other than dividing sections or else this breaks.
+        # IMPORTANT: this splits the description on the _____ token.
+        # Don't use said token for anything other than dividing sections
+        # or else this breaks.
         split_desc = old_desc.split("_____")
         split_desc[len(split_desc)-1] = "".join(delta_table)
         new_desc = ""
@@ -208,7 +211,7 @@ class DeltaBot(object):
         return
 
     def get_flair_number(self, dic):
-        """Get numeric value from flair"""
+        """ Get numeric value from flair. """
         try:
             num = int(dic[u'flair_text'].replace(u'∆', u''))
         except ValueError:
@@ -216,42 +219,9 @@ class DeltaBot(object):
             print "Viva la infinity!"
         return num
 
-    def get_previous_comment_id(self):
-        """Get the last comment's ID from file."""
-        try:
-            id_file = open('prev_id.txt', 'r')
-            current = id_file.readline()
-            if current == "None":
-                current = None
-            id_file.close()
-            #current_arrayify = ['%s' % current]
-            return current
-        except IOError:
-            logging.info("\n\nNo ID file. Create it.")
-            id_file = open('prev_id.txt', 'w+')
-            id_file.write("None")
-            id_file.close()
-            return None
-
-    def get_root_comment(self, comment):
-        """Find and return the root comment for this thread"""
-        if comment.is_root:
-            logging.debug("Comment IS root comment.")
-            return comment
-        submission = comment.submission  # sub object
-        parent = False
-        while not parent:
-            for c in submission.comments:
-                if self.comment_in_path(c, comment):
-                    logging.info("Found root comment")
-                    logging.info("Root comment is:")
-                    logging.info(c.body)
-                    return c
-        return None
-
     def multiple_deltas_thread(self, orig_comment):
         """Did this poster give > 1 delta in this thread? """
-        logging.info("Checking for multiple deltas.")
+        logging.debug("Checking for multiple deltas.")
         comments = self.get_thread_comments(orig_comment)
         if type(comments) is praw.objects.MoreComments:
             comments = comments.comments()
@@ -263,32 +233,10 @@ class DeltaBot(object):
                 if self.find_delta(comment, False):
                     users[comment.author.name] += 1
         if users[orig_comment.author.name] > 1:
-            logging.info("more than 0 comments in thread")
+            logging.debug("more than 0 comments in thread")
             return True
         logging.info("somehow got here")
         return False
-
-    def comment_in_path(self, root, comment):
-        """figure out whether or not comment is in child path of root"""
-        stack = [root]
-        while stack:
-            item = stack.pop(0)
-            try:
-                if not hasattr(item, 'replies'):
-                    logging.debug("No attribute .replies, probably a MoreComment")
-                    comments = item.comments()
-                    for reply in comments:
-                        stack.append(reply)
-                        if reply == comment:
-                            return True
-                for reply in item.replies:
-                    stack.append(reply)
-                    if reply == comment:
-                        return True
-            except AttributeError:
-                logging.debug("Probably a MoreComments object.")
-        return False
-
 
     def get_thread_comments(self, comment):
         """Returns a list of all comments in a comment's thread.
@@ -296,7 +244,7 @@ class DeltaBot(object):
         Implements a stack to gather a list of all comments in a
         thread in which the original comment is involved.
         """
-        logging.info("Getting all comments in thread.")
+        logging.debug("Getting all comments in thread.")
         root = self.get_root_comment(comment)
         if root is not None:
             stack = [root]
@@ -313,7 +261,6 @@ class DeltaBot(object):
                 except TypeError:
                     if item.comments() is None:
                         logging.warning("MoreComments object was seen as NoneType")
-                        print "Error: NoneType comment"
                     else:
                         raise TypeError("item.comments() is of type {0}".format(type(item.comments())))
                 continue
@@ -333,35 +280,103 @@ class DeltaBot(object):
             retval.append(item)
         return retval
 
+    def get_root_comment(self, comment):
+        """ Find and return the root comment for this thread """
+        if comment.is_root:
+            logging.debug("Comment IS root comment.")
+            return comment
+        submission = comment.submission  # sub object
+        parent = False
+        while not parent:
+            for c in submission.comments:
+                if self.comment_in_path(c, comment):
+                    logging.debug("Found root comment")
+                    logging.debug("Root comment is:")
+                    logging.debug(c.body)
+                    return c
+        return None
+
+    def comment_in_path(self, root, comment):
+        """ figure out whether or not comment is in child path of root """
+        stack = [root]
+        while stack:
+            item = stack.pop(0)
+            try:
+                if not hasattr(item, 'replies'):
+                    logging.debug("No attribute .replies, a MoreComment")
+                    comments = item.comments()
+                    for reply in comments:
+                        stack.append(reply)
+                        if reply == comment:
+                            return True
+                for reply in item.replies:
+                    stack.append(reply)
+                    if reply == comment:
+                        return True
+            except AttributeError:
+                logging.debug("Probably a MoreComments object.")
+        return False
+
     def write_previous_comment_id(self, the_id):
-        """Write the previous comment's ID to file."""
+        """ Write the previous comment's ID to file. """
         id_file = open('prev_id.txt', 'w')
         id_file.write(the_id)
         id_file.close()
         return
 
-    def is_parents_thread(self, comment):
-        """Does the thread belong to the comment's parent's author?"""
-        parent = self.reddit.get_info(thing_id=comment.parent_id)
-        if parent.author == comment.submission.author:
-            return True
-        else:
-            return False
+    def get_previous_comment_id(self):
+        """ Get the last comment's ID from file. """
+        try:
+            id_file = open('prev_id.txt', 'r')
+            current = id_file.readline()
+            if current == "None":
+                current = None
+            id_file.close()
+            #current_arrayify = ['%s' % current]
+            return current
+        except IOError:
+            logging.info("\n\nNo ID file. Create it.")
+            id_file = open('prev_id.txt', 'w+')
+            id_file.write("None")
+            id_file.close()
+            return None
 
     def message_commands(self):
-        """  Checks messages and takes appropriate actions. """
-    for msg in self.get_unread():
-            if msg.author.name not in self.config.mods:
-                msg.mark_as_read()
-                continue
-            if 'ScanComment' in msg.body:
-                comment_id = msg.body[msg.body.find("*")+1:msg.body.find("*",msg.body.find("*")+1)]
-                logging.debug('scanning {0} comment'.format(comment_id))
-                scan(comments = [self.user.get_info(thing_id=u'{0}'.format(comment_id)),])
-                msg.mark_as_read()
-            if 'DeleteDelta' in msg.body:
-                #get_flair_number(self, dic)
-                #add_points(redditor, num_points=1)
+        """  Checks messages and takes appropriate actions.
+        """
+        for msg in self.get_unread():
+                if msg.author.name not in self.config.mods:
+                    msg.mark_as_read()
+                    continue
+                # Each id needs to be preceded with an asterisk
+                if 'ScanThread' in msg.body:
+                    thread_ids = splitter(msg.body)
+                    for url in thread_ids:
+                        logging.debug('scanning {0} thread'.format(url))
+                        scan(comments = self.user.get_submission(submission_id = "url").comments)
+                    msg.mark_as_read()
+                if 'ScanComment' in msg.body:
+                    comment_ids = splitter(msg.body)
+                    # It would be ideal to pass ids directly onto scan,
+                    # unfortunately the t1 header must be appended.
+                    for url in comment_ids:
+                        logging.debug("scanning u't1_{0}' comment".format(url))
+                        scan(comments = [self.user.get_info(thing_id=u't1_{0}'.format(url)),])
+                    msg.mark_as_read()
+                if 'DeleteDelta' in msg.body:
+                    continue
+                    #get_flair_number(self, dic)
+                    #add_points(redditor, num_points=1)
+
+    def splitter(self, message_body, char = '*'):
+        """ str -> lst
+        Returns all the urls in a string.
+        Precon: urls must be preceded by the char, and separated by a space.
+
+        >>> splitter('*1n2k3p 9uaddj')
+        ['1n2k3p', '9uaddj']
+        """
+        return message_body[message_body.find(char)+1:].split()
 
     def update_delta_tracker(self, comment):
         comment_submission = comment.submission
@@ -377,7 +392,7 @@ class DeltaBot(object):
                 new_content = user_wiki_page.content_md + add_link
                 self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, new_content,
                                       "Updated delta links.")
-                logging.info("Updated delta tracker page for %s" % parent_author)
+                logging.debug("Updated delta tracker page for %s" % parent_author)
         except:
             #page doesn't exist, create it
             initial_text = "User %s received deltas in the following threads:\n\n" % parent_author
@@ -395,7 +410,7 @@ class DeltaBot(object):
             new_content = delta_tracker_page_body + new_link
             self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content,
                                        "Updated tracker page.")
-            logging.info("Updated delta_tracker to link to %s's page" % parent_author)
+            logging.debug("Updated delta_tracker to link to %s's page" % parent_author)
 
     def go(self):
         """Start DeltaBot"""
@@ -415,6 +430,6 @@ class DeltaBot(object):
                 self.write_previous_comment_id(before_id)
                 temp_id = before_id
             sleep_time = max(0, PERIOD_SCAN - (time.time() - start_time))
-            logging.debug('sleeping %0.1fs' % sleep_time)
-            logging.debug("Current ID is %s\n\n" % before_id)
+            logging.info('sleeping %0.1fs' % sleep_time)
+            logging.info("Current ID is %s\n\n" % before_id)
             time.sleep(sleep_time)
