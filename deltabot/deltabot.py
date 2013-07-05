@@ -66,7 +66,7 @@ class DeltaBot(object):
             try:
                 old_points = int(old_flair['flair_text'].replace(u'∆', u''))
             except ValueError:
-                logging.debug("Old flair wasn't numeric.")
+                logging.warning("Old flair wasn't numeric.")
                 return False
 
         new_flair_str = str(old_points + num_points) + u'∆'
@@ -169,7 +169,7 @@ class DeltaBot(object):
             self.award_delta(parent, comment)
 
         if newest_comment is None:
-            logging.debug('no new comments')
+            logging.info('no new comments')
             return before_id
         # write newest comment id to cache file
         self.write_previous_comment_id(newest_comment.name)
@@ -215,6 +215,7 @@ class DeltaBot(object):
         logging.info("Updated top 10 list.")
         return
 
+    # This func is never called?
     def get_flair_number(self, dic):
         """ Get numeric value from flair. """
         try:
@@ -370,8 +371,12 @@ class DeltaBot(object):
                     msg.mark_as_read()
                 if 'DeleteDelta' in msg.body:
                     continue
-                    #get_flair_number(self, dic)
-                    #add_points(redditor, num_points=1)
+                    # How can this work?
+
+                    #comment_id = splitter(msg.body)
+                    #logging.debug("scanning u't1_{0}' comment".format(comment_id))
+                    #del_comment = self.user.get_info(thing_id=u't1_{0}'.format(comment_id))
+                    #add_points(del_comment.author, num_points=-1)
 
     def splitter(self, message_body, char = '*'):
         """ str -> lst
