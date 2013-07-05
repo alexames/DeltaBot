@@ -45,7 +45,7 @@ class DeltaBot(object):
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
 
     def award_delta(self, parent, comment):
-        """Awards a delta"""
+        """ Awards a delta. """
         if self.add_points(parent.author):
             self.update_delta_tracker(comment)
             comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
@@ -54,7 +54,7 @@ class DeltaBot(object):
             logging.warning('non-numeric flair for user %s, skipping adding points' % comment.author.name)
 
     def add_points(self, redditor, num_points=1):
-        """Recalculate a user's delta and update flair."""
+        """ Recalculate a user's delta and update flair. """
 
         old_flair = self.subreddit.get_flair(redditor.name)
         if 'flair_css_class' not in old_flair or not old_flair['flair_css_class']:
@@ -79,7 +79,7 @@ class DeltaBot(object):
 
     #TODO: Seems slow. Can we streamline this?
     def find_delta(self, comment, check_confirmed=True):
-        """Search a comment to see whether or not there's a delta token"""
+        """ Search a comment to see whether or not there's a delta token. """
         if comment.is_root:
             logging.debug('not a reply')
             return False
@@ -125,12 +125,17 @@ class DeltaBot(object):
     #TODO: This function is way, way too big and can be modularized. Do that.
 
     def scan(self, comments = None, before_id=None, limit = 500, newest_comment = None):
+        """ Scan a given list of comments for delta tokens. If no list arg,
+        then get newest comments from subreddit. If delta found, award delta.
+        At end write newest comment id to file.
+        """
         if comments == None:
             comments = [c for c in self.subreddit.get_comments(params={'before': before_id}, limit=limit)]
         logging.debug('scanning comments newer than %s' % str(before_id))
         for comment in comments:
             if type(comment) is praw.objects.MoreComments:
                 # This shouldn't trigger since every comment is retrieved individually.
+                # As opposed to en mass from a submission
                 logging.debug("scanning a MoreComments object")
                 self.scan(comments = comment.comments())
 
@@ -220,7 +225,7 @@ class DeltaBot(object):
         return num
 
     def multiple_deltas_thread(self, orig_comment):
-        """Did this poster give > 1 delta in this thread? """
+        """ Did this poster give > 1 delta in this thread? """
         logging.debug("Checking for multiple deltas.")
         comments = self.get_thread_comments(orig_comment)
         if type(comments) is praw.objects.MoreComments:
@@ -413,7 +418,7 @@ class DeltaBot(object):
             logging.debug("Updated delta_tracker to link to %s's page" % parent_author)
 
     def go(self):
-        """Start DeltaBot"""
+        """ Start DeltaBot. """
         logging.info('starting with %0.1fs scan period\n\n' % PERIOD_SCAN)
         before_id = self.get_previous_comment_id()
         #before_id = None
