@@ -171,6 +171,7 @@ class DeltaBot(object):
         if newest_comment is None:
             logging.info('no new comments')
             return before_id
+            
         # write newest comment id to cache file
         self.write_previous_comment_id(newest_comment.name)
         return newest_comment.name
@@ -183,6 +184,7 @@ class DeltaBot(object):
     def update_top_ten_list(self):
         """ Update the top 10 list with highest delta earners. """
         top_deltas = self.get_top_ten_deltas()
+        logging.debug("Updating top 10 list.")
         delta_table = ["\n\n**Top Ten Viewchangers**", TABLE_HEAD,
                        TABLE_LEADER_ENTRY % ((top_deltas[0][u'user'], \
                         top_deltas[0][u'flair_text']))]
@@ -204,7 +206,7 @@ class DeltaBot(object):
             if x != split_desc[0]:
                 new_desc = new_desc + "_____" + x.replace("&amp;", "&")
         self.subreddit.update_settings(description=new_desc)
-        logging.info("Updated top 10 list.")
+        logging.debug("Updated top 10 list.")
 
         ## Section to create and update wiki/leaderboards
 ##        loggging.debug("Updating wiki leaderboards.")
@@ -218,6 +220,7 @@ class DeltaBot(object):
     # Incorporate this function back into update_top_ten_list() function?
     def get_top_ten_deltas(self):
         """ Get a list of the top 10 delta earners. """
+        logging.debug("Retrieving top 10 list.")
         flair_list = [f for f in self.subreddit.get_flair_list(limit=None)]
         flair_list = sorted(flair_list, key=self.get_flair_number)
         flair_list.reverse()
@@ -391,7 +394,7 @@ class DeltaBot(object):
     def splitter(self, message_body, char = '*'):
         """ str -> lst
         Returns all the urls in a string.
-        Precon: urls must be preceded by the char, and separated by a space.
+        Precon: urls must be preceded by the char and separated by a space.
 
         >>> splitter('*1n2k3p 9uaddj')
         ['1n2k3p', '9uaddj']
