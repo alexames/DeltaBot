@@ -150,15 +150,23 @@ class DeltaBot(object):
             logging.info('new delta comment %s by %s to %s found' % \
                 (comment.name, comment.author.name, parent.author.name))
             if parent.author.name.lower() == self.config.account['username'].lower():
+                #comment.reply(self.config.messages[None][0]).distinguish()
+                # Awaiting entry in config.json yet.
                 logging.debug('reply to bot detected, awarding no points')
                 continue
             if self.is_parents_thread(comment):
+                comment.reply(self.config.messages['broken_rule'][0]).distinguish()
                 logging.debug("Submission's author can't get delta in \
                                 own thread.")
                 continue
             if self.multiple_deltas_thread(comment):
+                #comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
                 logging.debug("Disallowing comment: same user, multiple deltas, \
                                 same thread")
+                continue
+            if len(comment.body) < 10:
+                #comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
+                logging.debug("Comment has too little text.")
                 continue
 
             # add points
