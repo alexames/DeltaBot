@@ -49,7 +49,12 @@ class DeltaBot(object):
         if self.add_points(parent.author):
             self.update_delta_tracker(comment)
             comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
-            logging.debug('confirmation message sent')
+
+            ## comment.author.send_message("[DeltaInfo]({delta_info}) and [Wikipage]({wiki_page}).".format( \
+            ## delta_info = "http://www.reddit.com/r/changemyview/wiki/index#wiki_deltas", \
+            ## wiki_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, comment.author))
+
+            logging.debug('Confirmation comment posted and message sent.')
         else:
             logging.warning('non-numeric flair for user %s, skipping adding points' % comment.author.name)
 
@@ -220,7 +225,7 @@ class DeltaBot(object):
 ##        self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, \
 ##            new_content, "Updated all-time table.")
 ##        logging.debug("Updated delta tracker leaderboard.")
-        
+
     # Incorporate this function back into update_top_ten_list() function?
     def get_top_ten_deltas(self):
         """ Get a list of the top 10 delta earners. """
