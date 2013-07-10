@@ -80,14 +80,10 @@ class DeltaBot(object):
     #TODO: Seems slow. Can we streamline this?
     def find_delta(self, comment, check_confirmed=True):
         """ Search a comment to see whether or not there's a delta token. """
-        if comment.is_root:
-            logging.debug('not a reply')
+        if comment.is_root or not comment.submission.author:
+            logging.debug('Comment or submission invalid.')
             return False
-        # skip deleted submissions
-        if not comment.submission.author:
-            logging.debug('author deleted')
-            return False
-        # strip any blockquotes so we don't count deltas twice
+        logging.debug("Stripping blockquotes.")
         comment.body = self.strip_quotations(comment.body)
         # search for token
 
@@ -102,7 +98,7 @@ class DeltaBot(object):
                     logging.debug('already confirmed')
                     return False
 
-            # get parent
+            logging.debug("Getting parent.")
             parent = self.reddit.get_info(thing_id=comment.parent_id)
             if parent.author is None:
                 logging.debug('parent.author is None')
@@ -171,7 +167,7 @@ class DeltaBot(object):
         if newest_comment is None:
             logging.info('no new comments')
             return before_id
-            
+
         # write newest comment id to cache file
         self.write_previous_comment_id(newest_comment.name)
         return newest_comment.name
@@ -336,17 +332,17 @@ class DeltaBot(object):
                 logging.debug("Probably a MoreComments object.")
         return False
 
-    def write_previous_comment_id(self, the_id):
+    def write_previous_comment_id(self, the_id = 'prev_id.txt'):
         """ Write the previous comment's ID to file. """
-        id_file = open('prev_id.txt', 'w')
+        id_file = open(the_id, 'w')
         id_file.write(the_id)
         id_file.close()
         return
 
-    def get_previous_comment_id(self):
+    def get_previous_comment_id(self, the_id = 'prev_id.txt'):
         """ Get the last comment's ID from file. """
         try:
-            id_file = open('prev_id.txt', 'r')
+            id_file = open(the_id, 'r')
             current = id_file.readline()
             if current == "None":
                 current = None
@@ -354,8 +350,8 @@ class DeltaBot(object):
             #current_arrayify = ['%s' % current]
             return current
         except IOError:
-            logging.info("\n\nNo ID file. Create it.")
-            id_file = open('prev_id.txt', 'w+')
+            logging.warning("\n\nNo ID file. Create it.")
+            id_file = open(the_id, 'w+')
             id_file.write("None")
             id_file.close()
             return None
