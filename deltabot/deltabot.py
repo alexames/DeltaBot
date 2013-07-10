@@ -399,6 +399,7 @@ class DeltaBot(object):
         return message_body[message_body.find(char)+1:].split()
 
     def update_delta_tracker(self, comment):
+        comment_url = comment.permalink
         comment_submission = comment.submission
         comment_submission_title = comment_submission.title
         comment_submission_url = comment_submission.url
@@ -408,15 +409,15 @@ class DeltaBot(object):
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit, parent_author)
             if user_wiki_page.page == parent_author:
                 #this is the parent's wiki page, update it.
-                add_link = "\n%s -- %s" % (comment_submission_title, comment_submission_url)
+                add_link = "\n[%s](%s)" % (comment_submission_title, comment_url)
                 new_content = user_wiki_page.content_md + add_link
                 self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, new_content,
                                       "Updated delta links.")
                 logging.debug("Updated delta tracker page for %s" % parent_author)
         except:
             #page doesn't exist, create it
-            initial_text = "User %s received deltas in the following threads:\n\n" % parent_author
-            add_link = "\n* %s -- %s" % (comment_submission_title, comment_submission_url)
+            initial_text = "User /u/%s received deltas in the following threads:\n\n" % parent_author
+            add_link = "\n* [%s](%s)" % (comment_submission_title, comment_url)
             full_update = initial_text + add_link
             self.reddit.edit_wiki_page(self.config.subreddit, parent_author, full_update,
                                        "Created user's delta links page.")
@@ -426,7 +427,7 @@ class DeltaBot(object):
             delta_tracker_page_body = delta_tracker_page.content_md
             authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit,
                            parent_author)
-            new_link = "\n* %s -- %s" % (parent_author, authors_page)
+            new_link = "\n* /u/%s" % (parent_author)
             new_content = delta_tracker_page_body + new_link
             self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content,
                                        "Updated tracker page.")
