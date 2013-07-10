@@ -175,18 +175,10 @@ class DeltaBot(object):
         self.write_previous_comment_id(newest_comment.name)
         return newest_comment.name
 
+    # Incorporate this function back into scan() function?
     def is_parents_thread(self, comment):
         """ Does the thread belong to the comment's parent's author? """
-        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author:
-
-    def get_top_ten_deltas(self):
-        """ Get a list of the top 10 delta earners. """
-        flair_list = [f for f in self.subreddit.get_flair_list(limit=None)]
-        flair_list = sorted(flair_list, key=self.get_flair_number)
-        flair_list.reverse()
-        while len(flair_list) < 10:
-            flair_list.append({u'user': u'none', u'flair_text': u'no deltas'})
-        return flair_list[0:10]
+        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author
 
     def update_top_ten_list(self):
         """ Update the top 10 list with highest delta earners. """
@@ -213,7 +205,25 @@ class DeltaBot(object):
                 new_desc = new_desc + "_____" + x.replace("&amp;", "&")
         self.subreddit.update_settings(description=new_desc)
         logging.info("Updated top 10 list.")
-        return
+
+        ## Section to create and update wiki/leaderboards
+##        loggging.debug("Updating wiki leaderboards.")
+##        wiki_page = self.reddit.get_wiki_page(self.config.subreddit, leaderboards)
+##        add_link = "\n[%s](%s)" % (comment_submission_title, comment_url)
+##        new_content = user_wiki_page.content_md + add_link
+##        self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, \
+##            new_content, "Updated all-time table.")
+##        logging.debug("Updated delta tracker leaderboard.")
+        
+    # Incorporate this function back into update_top_ten_list() function?
+    def get_top_ten_deltas(self):
+        """ Get a list of the top 10 delta earners. """
+        flair_list = [f for f in self.subreddit.get_flair_list(limit=None)]
+        flair_list = sorted(flair_list, key=self.get_flair_number)
+        flair_list.reverse()
+        while len(flair_list) < 10:
+            flair_list.append({u'user': u'none', u'flair_text': u'no deltas'})
+        return flair_list[0:10]
 
     # This func is never called?
     def get_flair_number(self, dic):
