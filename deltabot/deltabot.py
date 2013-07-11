@@ -34,7 +34,7 @@ TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
 TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
 class DeltaBot(object):
-    def __init__(self, config):
+    def __init__(self, config, testmode=False):
         self.config = config
 
         logging.info('connecting to reddit')
@@ -44,9 +44,14 @@ class DeltaBot(object):
 
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
 
+        self.testmode = testmode
+
     def award_delta(self, parent, comment):
         """ Awards a delta. """
-        if self.add_points(parent.author):
+        if self.testmode is True:
+            print comment.parent_id
+
+        elif self.add_points(parent.author):
             self.update_delta_tracker(comment)
             comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
 
