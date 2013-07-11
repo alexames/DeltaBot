@@ -5,7 +5,9 @@ import os
 class Config(object):
 
     def __init__(self, configFile):
-        if os.path.isfile(configFile):
+        if isinstance(configFile, dict):
+            self.attrs = configFile
+        elif os.path.isfile(configFile):
             self.attrs = json.load(open(configFile))
         else:
             self.attrs = json.loads(configFile)
