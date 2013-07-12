@@ -92,8 +92,8 @@ class DeltaBot(object):
             return False
         logging.debug("Stripping blockquotes.")
         comment.body = self.strip_quotations(comment.body)
-        # search for token
 
+        logging.debug("Searching for token.")
         if re.search(TOKEN_REGEX, comment.body):
             # see if bot already confirmed
             replyers = [c.author.name.lower() for c in comment.replies if c.author]
@@ -157,8 +157,6 @@ class DeltaBot(object):
             logging.info('new delta comment %s by %s to %s found' % \
                 (comment.name, comment.author.name, parent.author.name))
             if parent.author.name.lower() == self.config.account['username'].lower():
-                #comment.reply(self.config.messages[None][0]).distinguish()
-                # Awaiting entry in config.json yet.
                 logging.debug('reply to bot detected, awarding no points')
                 continue
             if self.is_parents_thread(comment):
@@ -167,23 +165,23 @@ class DeltaBot(object):
                                 own thread.")
                 continue
             if self.multiple_deltas_thread(comment):
-                #comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
+                comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
                 logging.debug("Disallowing comment: same user, multiple deltas, \
                                 same thread")
                 continue
             if len(comment.body) < 10:
-                #comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
+                comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
                 logging.debug("Comment has too little text.")
                 continue
 
-            # add points
+            logging.debug("Awarding points.")
             self.award_delta(parent, comment)
 
         if newest_comment is None:
             logging.info('no new comments')
             return before_id
 
-        # write newest comment id to cache file
+        logging.debug("Writing newest comment id to cache file.")
         self.write_previous_comment_id(newest_comment.name)
         return newest_comment.name
 
@@ -213,7 +211,6 @@ class DeltaBot(object):
         split_desc[len(split_desc)-1] = "".join(delta_table)
         new_desc = ""
         for x in split_desc:
-            #logging.info(x)
             if x != split_desc[0]:
                 new_desc = new_desc + "_____" + x.replace("&amp;", "&")
         self.subreddit.update_settings(description=new_desc)
@@ -222,8 +219,6 @@ class DeltaBot(object):
         ## Section to create and update wiki/leaderboards
 ##        loggging.debug("Updating wiki leaderboards.")
 ##        wiki_page = self.reddit.get_wiki_page(self.config.subreddit, leaderboards)
-##        add_link = "\n[%s](%s)" % (comment_submission_title, comment_url)
-##        new_content = user_wiki_page.content_md + add_link
 ##        self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, \
 ##            new_content, "Updated all-time table.")
 ##        logging.debug("Updated delta tracker leaderboard.")
@@ -315,14 +310,12 @@ class DeltaBot(object):
         if comment.is_root:
             logging.debug("Comment IS root comment.")
             return comment
-        submission = comment.submission  # sub object
+        submission = comment.submission
         parent = False
         while not parent:
             for c in submission.comments:
                 if self.comment_in_path(c, comment):
-                    logging.debug("Found root comment")
-                    logging.debug("Root comment is:")
-                    logging.debug(c.body)
+                    logging.debug("Root comment found {}.".format(c.body))
                     return c
         return None
 
