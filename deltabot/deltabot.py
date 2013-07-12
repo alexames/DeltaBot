@@ -151,7 +151,7 @@ class DeltaBot(object):
                 # This shouldn't trigger since every comment is retrieved individually.
                 # As opposed to en mass from a submission
                 logging.debug("scanning a MoreComments object")
-                self.scan(comments = comment.comments())
+                newest_comment = self.reddit.get_info(thing_id=self.scan(comments = comment.comments()))
 
             if comment == None or comment.name == None or comment.author == None:
                 logging.debug("Author or comment has been deleted.\n")
@@ -159,7 +159,6 @@ class DeltaBot(object):
             else:
                 logging.debug('scanning comment %s by %s' % \
                     (comment.name, comment.author.name))
-                newest_comment = comment
 
             # see if there's a delta reply
             parent = self.find_delta(comment)
@@ -187,6 +186,9 @@ class DeltaBot(object):
 
             logging.debug("Awarding points.")
             self.award_delta(parent, comment)
+
+            if self.reddit.get_info(thing_id=before_id).created > comment.created:
+                newest_comment = comment
 
         if newest_comment is None:
             logging.info('no new comments')
