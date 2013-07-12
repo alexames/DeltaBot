@@ -53,10 +53,21 @@ class DeltaBot(object):
 
         elif self.add_points(parent.author):
             self.update_delta_tracker(comment)
+            logging.debug('Posting confirmation delta comment.')
             comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
-            comment.author.send_message(self.config.private_message.format( \
-            wiki_page_url = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, comment.author))
-            logging.debug('Confirmation comment posted and message sent.')
+            if 1 == 2: #check for first delta condition
+                logging.debug('Sending first time delta message.')
+                comment.author.send_message(self.config.private_message.format( \
+                wiki_page_url = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, comment.author))
+            
+            ## Section to update wiki/deltaqueue
+##            loggging.debug("Writing to deltaqueue.")
+##            wiki_page = self.reddit.get_wiki_page(self.config.subreddit, deltaqueue)
+##            add_text = "\n[{0} to {1}]({2}) - [approve]({3})[remove]({4})[request explanation]({5})".\
+##            format(comment.author, comment.parent.author, comment.permalink, \
+            ## 3-5 are actually func calls to self.message_commands()
+##            None, None, None)
+##            new_content = user_wiki_page.content_md + add_text
         else:
             logging.warning('non-numeric flair for user %s, skipping adding points' % comment.author.name)
 
