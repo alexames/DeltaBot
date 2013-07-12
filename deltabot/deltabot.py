@@ -54,11 +54,8 @@ class DeltaBot(object):
         elif self.add_points(parent.author):
             self.update_delta_tracker(comment)
             comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
-
-            ## comment.author.send_message("[DeltaInfo]({delta_info}) and [Wikipage]({wiki_page}).".format( \
-            ## delta_info = "http://www.reddit.com/r/changemyview/wiki/index#wiki_deltas", \
-            ## wiki_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, comment.author))
-
+            comment.author.send_message(self.config.private_message.format( \
+            wiki_page_url = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, comment.author))
             logging.debug('Confirmation comment posted and message sent.')
         else:
             logging.warning('non-numeric flair for user %s, skipping adding points' % comment.author.name)
