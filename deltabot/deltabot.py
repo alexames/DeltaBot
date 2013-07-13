@@ -7,20 +7,12 @@ import praw
 import pprint
 import urllib2
 
-# 30 seconds for now, change to 60*60 for 1 hour
-##### Shouldn't this be 30 minutes? If 60*60 is 1 hr, and 60*30 is half that,
-##### How is 60*30 == 30 seconds?
-PERIOD_SCAN = 60*30
-
 # these can optionally be changed
 
 TOKENS = [u'∆', u'&amp;#8710;', u'Δ']
 
 # unnecessary now that we have wiki solution
 #TRACKER_URL = "http://www.reddit.com/r/snorrrlax/comments/1adxhd/deltabots_delta_tracker/"
-
-# ignore everything else
-###########################
 
 TOKEN_GROUP = u'(' + u'|'.join(TOKENS) + u')'
 TOKEN_REGEX = u'(?<!["\'])%s(?!["\'])' % TOKEN_GROUP
@@ -51,25 +43,6 @@ class DeltaBot(object):
         if self.testmode is True:
             print comment.parent_id
 
-        elif self.add_points(parent.author):
-            self.update_delta_tracker(comment)
-            logging.debug('Posting confirmation delta comment.')
-            comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
-            if 1 == 2: #check for first delta condition
-                logging.debug('Sending first time delta message.')
-                comment.author.send_message(self.config.private_message.format( \
-                wiki_page_url = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, comment.author))
-            
-            ## Section to update wiki/deltaqueue
-##            loggging.debug("Writing to deltaqueue.")
-##            wiki_page = self.reddit.get_wiki_page(self.config.subreddit, deltaqueue)
-##            add_text = "\n[{0} to {1}]({2}) - [approve]({3})[remove]({4})[request explanation]({5})".\
-##            format(comment.author, comment.parent.author, comment.permalink, \
-            ## 3-5 are actually func calls to self.message_commands()
-##            None, None, None)
-##            new_content = user_wiki_page.content_md + add_text
-        else:
-            logging.warning('non-numeric flair for user %s, skipping adding points' % comment.author.name)
 
     def add_points(self, redditor, num_points=1):
         """ Recalculate a user's delta and update flair. """
@@ -455,7 +428,7 @@ class DeltaBot(object):
 
     def go(self):
         """ Start DeltaBot. """
-        logging.info('starting with %0.1fs scan period\n\n' % PERIOD_SCAN)
+        logging.info('starting with %0.1fs scan period\n\n' % self.config["polling_interval"])
         before_id = self.get_previous_comment_id()
         #before_id = None
         logging.info("We're starting from this ID: %s\n\n" % before_id)
@@ -470,7 +443,7 @@ class DeltaBot(object):
             if before_id != temp_id:
                 self.write_previous_comment_id(before_id)
                 temp_id = before_id
-            sleep_time = max(0, PERIOD_SCAN - (time.time() - start_time))
+            sleep_time = max(0, self.config["polling_interval"] - (time.time() - start_time))
             logging.info('sleeping %0.1fs' % sleep_time)
             logging.info("Current ID is %s\n\n" % before_id)
             time.sleep(sleep_time)

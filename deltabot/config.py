@@ -14,3 +14,6 @@ class Config(object):
 
     def __getattr__(self, name):
         return self.attrs.get(name)
+
+    def __getitem__(self, name):
+        return self.attrs.get(name)

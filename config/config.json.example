@@ -1,16 +1,15 @@
 {
     "subreddit": "changemyview",
+
     "account": {
         "username": "DeltaBot",
         "password": "PASSWORD"
     },
-    "private_message": "Congratulations; you've earned your first delta!\n\n
-    As you may already know, a delta (&#8710;) is given when a comment has changed someone's view. For a more detailed 
-    explanation of the delta system, [see here](http://www.reddit.com/r/changemyview/wiki/deltabot).\n\n
-    /u/DeltaBot has updated your user flair and created [your own wiki page](wiki_page_url) which will be updated 
-    every time you earn a delta. If you do well, you may find yourself on our 
-    [leaderboards](http://www.reddit.com/r/changemyview/wiki/leaderboards) 
-    (the monthly one is also featured in our sidebar).\n\nGood luck, and happy CMVing!",
+
+    "polling_interval": 1800,
+
+    "private_message": "Congratulations; you've earned your first delta!\n\nAs you may already know, a delta (&#8710;) is given when a comment has changed someone's view. For a more detailed explanation of the delta system, [see here](http://www.reddit.com/r/changemyview/wiki/deltabot).\n\n/u/DeltaBot has updated your user flair and created [your own wiki page](wiki_page_url) which will be updated every time you earn a delta. If you do well, you may find yourself on our [leaderboards](http://www.reddit.com/r/changemyview/wiki/leaderboards) (the monthly one is also featured in our sidebar).\n\nGood luck, and happy CMVing!",
+
     "messages": {
         "confirmation": [
             "Confirmed: 1 delta awarded to /u/%s"
@@ -28,4 +27,5 @@
             For more information, please see our wiki."
         ]
     }
+
 }
