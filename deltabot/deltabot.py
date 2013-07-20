@@ -180,7 +180,7 @@ class DeltaBot(object):
         """ Update the top 10 list with highest delta earners. """
         top_deltas = self.get_top_ten_deltas()
         logging.debug("Updating top 10 list.")
-        delta_table = ["\n\n**Top Ten Viewchangers**", TABLE_HEAD,
+        delta_table = ["\n\n# Top Ten Viewchangers", TABLE_HEAD,
                        TABLE_LEADER_ENTRY % ((top_deltas[0][u'user'], \
                         top_deltas[0][u'flair_text']))]
 
