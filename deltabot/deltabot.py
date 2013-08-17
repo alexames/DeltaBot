@@ -25,6 +25,8 @@ TABLE_HEAD = '\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |'
 TABLE_LEADER_ENTRY = "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |"
 TABLE_ENTRY = '\n| %s | /u/%s | [%s](// "deltas received") |'
 
+INTEGER_REGEX = u'(\d+)'
+
 class DeltaBot(object):
     def __init__(self, config, testmode=False):
         self.config = config
@@ -43,6 +45,10 @@ class DeltaBot(object):
         if self.testmode is True:
             print comment.parent_id
 
+        self.add_points(parent.author)
+        self.update_delta_tracker(comment)
+        logging.debug('Posting confirmation delta comment.')
+        comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
 
     def add_points(self, redditor, num_points=1):
         """ Recalculate a user's delta and update flair. """
@@ -54,11 +60,7 @@ class DeltaBot(object):
             old_flair['flair_text'] = ''
             old_points = 0
         else:
-            try:
-                old_points = int(old_flair['flair_text'].replace(u'∆', u''))
-            except ValueError:
-                logging.warning("Old flair wasn't numeric.")
-                return False
+            old_points = self.get_first_int(old_flair['flair_text'])
 
         new_flair_str = str(old_points + num_points) + u'∆'
         if 'points' not in old_flair['flair_css_class']:
@@ -66,7 +68,6 @@ class DeltaBot(object):
         else:
             new_flair_class = old_flair['flair_css_class']
         self.subreddit.set_flair(redditor.name, new_flair_str, new_flair_class)
-        return True
 
     #TODO: Seems slow. Can we streamline this?
     def find_delta(self, comment, check_confirmed=True):
@@ -160,7 +161,7 @@ class DeltaBot(object):
             logging.debug("Awarding points.")
             self.award_delta(parent, comment)
 
-            if self.reddit.get_info(thing_id=before_id).created > comment.created:
+            if not before_id or self.reddit.get_info(thing_id=before_id).created > comment.created:
                 newest_comment = comment
 
         if newest_comment is None:
@@ -209,6 +210,14 @@ class DeltaBot(object):
 ##            new_content, "Updated all-time table.")
 ##        logging.debug("Updated delta tracker leaderboard.")
 
+
+    def get_first_int(self, string):
+        num = re.search(INTEGER_REGEX, string)
+        if num:
+            return int(num.group())
+        else:
+            return 0
+
     # Incorporate this function back into update_top_ten_list() function?
     def get_top_ten_deltas(self):
         """ Get a list of the top 10 delta earners. """
@@ -223,12 +232,11 @@ class DeltaBot(object):
     # This func is never called?
     def get_flair_number(self, dic):
         """ Get numeric value from flair. """
-        try:
-            num = int(dic[u'flair_text'].replace(u'∆', u''))
-        except ValueError:
-            num = None
-            print "Viva la infinity!"
-        return num
+        num = dic[u'flair_text']
+        if num:
+            return self.get_first_int(num)
+        else:
+            return 0
 
     def multiple_deltas_thread(self, orig_comment):
         """ Did this poster give > 1 delta in this thread? """
