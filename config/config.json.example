@@ -23,6 +23,8 @@
         "broken_rule": [
             "You cannot award OP a delta as we feel allowing so would send the wrong message. For more information, please see our wiki."
         ]
-    }
+    },
+
+    "last_comment_filename": "prev_id.txt"
 
 }
