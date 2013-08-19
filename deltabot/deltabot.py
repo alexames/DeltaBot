@@ -160,7 +160,7 @@ class DeltaBot(object):
             logging.debug("Awarding points.")
             self.award_delta(parent, comment)
 
-            if self.reddit.get_info(thing_id=before_id).created > comment.created:
+            if not before_id or self.reddit.get_info(thing_id=before_id).created > comment.created:
                 newest_comment = comment
 
         if newest_comment is None:
