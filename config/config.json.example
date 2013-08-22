@@ -25,6 +25,18 @@
         ]
     },
 
-    "last_comment_filename": "prev_id.txt"
+    "tokens": ["∆", "&amp;#8710;", "Δ"],
 
+    "flair": {
+        "point_text": "%s∆",
+        "css_class": "points"
+    },
+
+    "last_comment_filename": "prev_id.txt",
+
+    "scoreboard": {
+        "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |",
+        "table_leader_entry": "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |",
+        "table_entry": "\n| %s | /u/%s | [%s](// \"deltas received\") |"
+    }
 }
