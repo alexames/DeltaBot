@@ -1,5 +1,29 @@
 # encoding: utf-8
-from __future__ import division
+
+
+################################################################################
+#                                                                              #
+# Copyright 2013: Acebulf, alexames, PixelOrange, Snorrrlax, vaetrus, yaworsw  #
+#                 and the moderators of http://www.reddit.com/r/changemyview   #
+#                                                                              #
+# This file is part of Deltabot sourcecode.                                    #
+#                                                                              #
+# Deltabot is free software: you can redistribute it and/or modify             #
+# it under the terms of the GNU General Public License as published by         #
+# the Free Software Foundation, either version 3 of the License, or            #
+# (at your option) any later version.                                          #
+#                                                                              #
+# Deltabot is distributed in the hope that it will be useful,                  #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of               #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                #
+# GNU General Public License for more details.                                 #
+#                                                                              #
+# You should have received a copy of the GNU General Public License            #
+# along with Deltabot.  If not, see <http://www.gnu.org/licenses/>.            #
+#                                                                              #
+################################################################################
+
+
 import re
 import time
 import praw
