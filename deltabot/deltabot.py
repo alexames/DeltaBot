@@ -26,7 +26,7 @@ def flair_sorter(dic):
 
 def skippable_line(line):
     """ Returns true if the give line is a quote or code """
-    return re.search('(^    |^ *>)', line) != None
+    return re.search('(^    |^ *&gt;)', line) != None
 
 
 def string_contains_token(text, tokens):
@@ -130,14 +130,14 @@ class DeltaBot(object):
     def points_already_awarded(self, comment):
         """ Returns true if Deltabot has replied to this comment """
         for reply in comment.replies:
-            if reply.author is self.config.account['username']:
+            if reply.author == self.config.account['username']:
                 return True;
         return False
 
 
     def is_parent_commenter_author(self, comment):
         """ returns true if the author of the parent comment the submitter """
-        return self.reddit.get_info(thing_id=comment.parent_id).author is comment.submission.author
+        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author
 
 
     def scan_comment(self, comment):
