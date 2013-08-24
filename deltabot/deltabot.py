@@ -43,6 +43,29 @@ def string_contains_token(text, tokens):
                     return True
     return False
 
+
+def write_saved_id(filename, the_id):
+    """ Write the previous comment's ID to file. """
+    logging.debug("Saving ID %s to file %s" % (the_id, filename))
+    id_file = open(filename, 'w')
+    id_file.write(the_id if the_id else "None")
+    id_file.close()
+
+
+def read_saved_id(filename):
+    """ Get the last comment's ID from file. """
+    logging.debug("Reading ID from file %s" % filename)
+    try:
+        id_file = open(filename, 'r')
+        current = id_file.readline()
+        if current == "None":
+            current = None
+        id_file.close()
+        return current
+    except IOError:
+        return None
+
+
 class DeltaBot(object):
     def __init__(self, config):
         logging.info('connecting to reddit')
@@ -52,6 +75,7 @@ class DeltaBot(object):
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = u'(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.thread_id_regex = u'(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/([\d\w]+)(?:\S)'
+        self.before_id = read_saved_id(self.config.last_comment_filename)
 
 
     def award_points(self, parent, comment):
@@ -72,7 +96,7 @@ class DeltaBot(object):
         else:
             points = 0
             css_class = ''
-        
+
         points += num_points
         if self.config.flair['css_class'] not in css_class:
             css_class += ' ' + self.config.flair['css_class']
@@ -83,7 +107,7 @@ class DeltaBot(object):
 
 
     def points_already_awarded_to_ancestor(self, comment):
-        """ Returns true if a point was awarded by the comment's author already 
+        """ Returns true if a point was awarded by the comment's author already
         in this branch of the comment tree """
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         awarder = comment.author
@@ -93,7 +117,7 @@ class DeltaBot(object):
             parent = self.reddit.get_info(thing_id=comment.parent_id)
 
             if (comment.author is awarder
-                and parent.author is awardee 
+                and parent.author is awardee
                 and string_contains_token(comment.body, self.config.tokens)):
                 return True
 
@@ -113,18 +137,18 @@ class DeltaBot(object):
         return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author
 
 
-    def scan_comments(self, comments = None, before_id=None, limit = 500):
+    def scan_comments(self, comments = None):
         """ Scan a given list of comments for tokens. If no list arg,
         then get newest comments from subreddit. If a token is found, award points.
         """
         if comments == None:
-            comments = [comment for comment in 
-                        self.subreddit.get_comments(params={'before': before_id}, limit=limit) 
+            comments = [comment for comment in
+                        self.subreddit.get_comments(params={'before': self.before_id})
                         if comment and comment.name and comment.author]
 
         for comment in comments:
-            if not before_id or comment.name > before_id:
-                before_id = comment.name
+            if not self.before_id or comment.name > self.before_id:
+                self.before_id = comment.name
 
             logging.info(comment.permalink)
 
@@ -150,8 +174,6 @@ class DeltaBot(object):
 
                 self.award_points(parent, comment)
 
-        return before_id
-
 
     def parse_message(self, message):
         match = re.search(MESSAGE_ACTION_REGEX, message.body)
@@ -169,11 +191,11 @@ class DeltaBot(object):
         else:
             match = None
         return action, match
-        
+
 
     def scan_inbox(self, messages = None):
         """ Scan a given list of messages for commands. If no list arg,
-        then get newest comments from the inbox. 
+        then get newest comments from the inbox.
         """
         if messages == None:
             messages = [m for m in self.reddit.get_unread()]
@@ -238,28 +260,6 @@ class DeltaBot(object):
         return flair_list[0:10]
 
 
-    def write_saved_id(self, filename, the_id):
-        """ Write the previous comment's ID to file. """
-        logging.debug("Saving ID %s to file %s" % (the_id, filename))
-        id_file = open(filename, 'w')
-        id_file.write(the_id if the_id else "None")
-        id_file.close()
-
-
-    def read_saved_id(self, filename):
-        """ Get the last comment's ID from file. """
-        logging.debug("Reading ID from file %s" % filename)
-        try:
-            id_file = open(filename, 'r')
-            current = id_file.readline()
-            if current == "None":
-                current = None
-            id_file.close()
-            return current
-        except IOError:
-            return None
-
-
     def update_wiki_tracker(self, comment):
         comment_url = comment.permalink
         comment_submission = comment.submission
@@ -288,16 +288,18 @@ class DeltaBot(object):
 
     def go(self):
         """ Start DeltaBot. """
-        before_id = self.read_saved_id(self.config.last_comment_filename)
-        logging.info("We're starting from this ID: %s\n\n" % before_id)
         self.running = True
         while self.running:
-            start_time = time.time()
-            before_id = self.scan_comments(before_id = before_id)
-            self.scan_inbox()
-            self.update_leaderboard()
-            self.write_saved_id(self.config.last_comment_filename, before_id)
-            sleep_time = max(0, self.config["polling_interval"] - (time.time() - start_time))
-            logging.info('sleeping %0.1fs' % sleep_time)
-            logging.info("Current ID is %s\n\n" % before_id)
-            time.sleep(sleep_time)
+            logging.info("Scanning, starting at: %s" % self.before_id)
+
+            try:
+                self.scan_comments()
+                self.scan_inbox()
+                self.update_leaderboard()
+            except Exception:
+                pass
+
+            write_saved_id(self.config.last_comment_filename, self.before_id)
+            logging.info("Current ID is %s" % self.before_id)
+
+            time.sleep(self.config.sleep_time)
