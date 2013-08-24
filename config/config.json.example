@@ -34,6 +34,8 @@
 
     "last_comment_filename": "prev_id.txt",
 
+    "minimum_comment_length": 10,
+
     "scoreboard": {
         "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |",
         "table_leader_entry": "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |",

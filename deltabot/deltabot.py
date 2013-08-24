@@ -6,7 +6,7 @@ import praw
 import logging
 
 
-MESSAGE_ACTION_REGEX = u'(add_delta|remove_delta|scan_thread|stop)'
+MESSAGE_ACTION_REGEX = u'(add_delta|scan_thread|stop)'
 
 
 logging.getLogger('requests').setLevel(logging.WARNING) # hide messages from requests
@@ -58,7 +58,7 @@ def read_saved_id(filename):
     try:
         id_file = open(filename, 'r')
         current = id_file.readline()
-        if current == "None":
+        if current is "None":
             current = None
         id_file.close()
         return current
@@ -74,8 +74,13 @@ class DeltaBot(object):
         self.reddit.login(*[self.config.account['username'], self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = u'(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
-        self.thread_id_regex = u'(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/([\d\w]+)(?:\S)'
         self.before_id = read_saved_id(self.config.last_comment_filename)
+        self.changes_made = False
+        longest = 0
+        for token in self.config.tokens:
+            if len(token) > longest:
+                longest = len(token)
+        self.minimum_comment_length = longest + self.config.minimum_comment_length
 
 
     def award_points(self, parent, comment):
@@ -88,6 +93,7 @@ class DeltaBot(object):
 
     def add_points(self, redditor, num_points=1):
         """ Recalculate a user's score and update flair. """
+        self.changes_made = True
 
         flair = self.subreddit.get_flair(redditor)
         if flair:
@@ -134,45 +140,47 @@ class DeltaBot(object):
 
     def is_parent_commenter_author(self, comment):
         """ returns true if the author of the parent comment the submitter """
-        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author
+        return self.reddit.get_info(thing_id=comment.parent_id).author is comment.submission.author
 
 
-    def scan_comments(self, comments = None):
-        """ Scan a given list of comments for tokens. If no list arg,
-        then get newest comments from subreddit. If a token is found, award points.
-        """
-        if comments == None:
-            comments = [comment for comment in
-                        self.subreddit.get_comments(params={'before': self.before_id})
-                        if comment and comment.name and comment.author]
+    def scan_comment(self, comment):
+        logging.info("Scanning comment %s" % comment.name)
+
+        parent = self.reddit.get_info(thing_id=comment.parent_id)
+
+        if string_contains_token(comment.body, self.config.tokens) and parent.author.name is not self.config.account['username']:
+
+            if self.is_parent_commenter_author(comment):
+                logging.info("No points awarded, parent is OP")
+                comment.reply(self.config.messages['broken_rule'][0]).distinguish()
+                return
+            if self.points_already_awarded_to_ancestor(comment):
+                logging.info("No points awarded, already awarded")
+                comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
+                return
+            if len(comment.body) < self.minimum_comment_length:
+                logging.info("No points awarded, too short")
+                comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
+                return
+            if self.points_already_awarded(comment):
+                # We scaned this comment more than once, no need to reply. Just continue on silently
+                return
+
+            self.award_points(parent, comment)
+
+
+    def scan_comments(self):
+        """ Scan a given list of comments for tokens. If a token is found, award points. """
+        logging.info("Scanning new comments")
+
+        comments = [comment for comment in
+                    self.subreddit.get_comments(params={'before': self.before_id})
+                    if comment and comment.name and comment.author]
 
         for comment in comments:
+            self.scan_comment(comment)
             if not self.before_id or comment.name > self.before_id:
                 self.before_id = comment.name
-
-            logging.info(comment.permalink)
-
-            parent = self.reddit.get_info(thing_id=comment.parent_id)
-
-            if string_contains_token(comment.body, self.config.tokens) and parent.author.name is not self.config.account['username']:
-
-                if self.is_parent_commenter_author(comment):
-                    logging.info("No points awarded, parent is OP")
-                    comment.reply(self.config.messages['broken_rule'][0]).distinguish()
-                    continue
-                if self.points_already_awarded_to_ancestor(comment):
-                    logging.info("No points awarded, already awarded")
-                    comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
-                    continue
-                if len(comment.body) < 10:
-                    logging.info("No points awarded, too short")
-                    comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
-                    continue
-                if self.points_already_awarded(comment):
-                    # We scaned this comment more than once, no need to reply. Just continue on silently
-                    continue
-
-                self.award_points(parent, comment)
 
 
     def parse_message(self, message):
@@ -180,8 +188,7 @@ class DeltaBot(object):
         action = None
         if match:
             action = match.group()
-
-        if action == None:
+        if action is None:
             action = "add_delta"
 
         if action is "add_delta":
@@ -193,13 +200,12 @@ class DeltaBot(object):
         return action, match
 
 
-    def scan_inbox(self, messages = None):
+    def scan_inbox(self):
         """ Scan a given list of messages for commands. If no list arg,
-        then get newest comments from the inbox.
-        """
-        if messages == None:
-            messages = [m for m in self.reddit.get_unread()]
+        then get newest comments from the inbox. """
+        logging.info("Scanning inbox")
 
+        messages = [mod for mod in self.reddit.get_unread()]
         moderators = [mod.name for mod in self.reddit.get_moderators(self.config.subreddit)]
 
         for message in messages:
@@ -209,13 +215,7 @@ class DeltaBot(object):
                     for id in ids:
                         comment = self.reddit.get_info(thing_id=u't1_{0}'.format(id))
                         if type(comment) is praw.objects.Comment:
-                            self.scan_comments(comments = [comment])
-
-                elif action is "scan_thread":
-                    for id in ids:
-                        submission = self.reddit.get_submission(submission_id = id)
-                        if type(submission) is praw.objects.Submission:
-                            self.scan_comments(comments = submission.comments)
+                            self.scan_comment(comments)
 
                 elif action is "remove_delta":
                     pass
@@ -228,6 +228,7 @@ class DeltaBot(object):
 
     def update_leaderboard(self):
         """ Update the top 10 list with highest scores. """
+        logging.info("Updating leaderboard")
         top_scores = self.get_top_ten_scores()
         score_table = ["\n\n# Top Ten Viewchangers", self.config.scoreboard['table_head'],
                       self.config.scoreboard['table_leader_entry'] % ((top_scores[0][u'user'], \
@@ -248,6 +249,7 @@ class DeltaBot(object):
             if section != split_desc[0]:
                 new_desc = new_desc + "_____" + section.replace("&amp;", "&")
         self.subreddit.update_settings(description=new_desc)
+        self.changes_made = False
 
 
     def get_top_ten_scores(self):
@@ -290,16 +292,20 @@ class DeltaBot(object):
         """ Start DeltaBot. """
         self.running = True
         while self.running:
-            logging.info("Scanning, starting at: %s" % self.before_id)
+            logging.info("Starting iteration at %s" % self.before_id)
+            old_before_id = self.before_id
 
             try:
                 self.scan_comments()
                 self.scan_inbox()
-                self.update_leaderboard()
+                if self.changes_made:
+                    self.update_leaderboard()
             except Exception:
                 pass
 
-            write_saved_id(self.config.last_comment_filename, self.before_id)
-            logging.info("Current ID is %s" % self.before_id)
+            logging.info("Iteration complete at %s" % self.before_id)
+            if old_before_id is not self.before_id:
+                write_saved_id(self.config.last_comment_filename, self.before_id)
 
+            logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             time.sleep(self.config.sleep_time)
