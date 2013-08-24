@@ -6,9 +6,6 @@ import praw
 import logging
 
 
-MESSAGE_ACTION_REGEX = u'(add_delta|scan_thread|stop)'
-
-
 logging.getLogger('requests').setLevel(logging.WARNING) # hide messages from requests
 
 
@@ -122,8 +119,8 @@ class DeltaBot(object):
             comment = self.reddit.get_info(thing_id=comment.parent_id)
             parent = self.reddit.get_info(thing_id=comment.parent_id)
 
-            if (comment.author is awarder
-                and parent.author is awardee
+            if (comment.author == awarder
+                and parent.author == awardee
                 and string_contains_token(comment.body, self.config.tokens)):
                 return True
 
@@ -144,7 +141,7 @@ class DeltaBot(object):
 
 
     def scan_comment(self, comment):
-        logging.info("Scanning comment %s" % comment.name)
+        logging.info("Scanning comment %s by %s" % (comment.name, comment.author))
 
         parent = self.reddit.get_info(thing_id=comment.parent_id)
 
@@ -173,31 +170,10 @@ class DeltaBot(object):
         """ Scan a given list of comments for tokens. If a token is found, award points. """
         logging.info("Scanning new comments")
 
-        comments = [comment for comment in
-                    self.subreddit.get_comments(params={'before': self.before_id})
-                    if comment and comment.name and comment.author]
-
-        for comment in comments:
+        for comment in self.subreddit.get_comments(params={'before': self.before_id}):
             self.scan_comment(comment)
             if not self.before_id or comment.name > self.before_id:
                 self.before_id = comment.name
-
-
-    def parse_message(self, message):
-        match = re.search(MESSAGE_ACTION_REGEX, message.body)
-        action = None
-        if match:
-            action = match.group()
-        if action is None:
-            action = "add_delta"
-
-        if action is "add_delta":
-            match = re.findall(self.comment_id_regex, message.body)
-        elif action is "scan_thread":
-            match = re.findall(self.thread_id_regex, message.body)
-        else:
-            match = None
-        return action, match
 
 
     def scan_inbox(self):
@@ -205,22 +181,24 @@ class DeltaBot(object):
         then get newest comments from the inbox. """
         logging.info("Scanning inbox")
 
-        messages = [mod for mod in self.reddit.get_unread()]
+        messages = [message for message in self.reddit.get_unread()]
         moderators = [mod.name for mod in self.reddit.get_moderators(self.config.subreddit)]
 
         for message in messages:
-            if message.author.name in moderators or True:
-                action, ids = self.parse_message(message)
-                if action is "add_delta":
+            logging.info("Scanning message %s from %s" % (message.name, message.author))
+            if message.author.name in moderators:
+                if message.subject.lower() == "add":
+                    ids = re.findall(self.comment_id_regex, message.body)
                     for id in ids:
                         comment = self.reddit.get_info(thing_id=u't1_{0}'.format(id))
                         if type(comment) is praw.objects.Comment:
-                            self.scan_comment(comments)
+                            self.scan_comment(comment)
 
-                elif action is "remove_delta":
+                elif message.subject.lower() == "remove":
+                    # Todo
                     pass
 
-                elif action is "stop":
+                elif message.subject.lower() == "stop":
                     self.running = False
 
             message.mark_as_read()
