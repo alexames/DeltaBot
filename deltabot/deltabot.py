@@ -254,7 +254,7 @@ class DeltaBot(object):
                 new_content = user_wiki_page.content_md + add_link
                 self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, new_content, "Updated delta links.")
         except:
-            initial_text = "User /u/%s received deltas in the following threads:\n\n" % parent_author
+            initial_text = "/u/%s has received deltas for the following comments:\n\n" % parent_author
             add_link = "\n* [%s](%s)" % (comment_submission_title, comment_url)
             full_update = initial_text + add_link
             self.reddit.edit_wiki_page(self.config.subreddit, parent_author, full_update, "Created user's delta links page.")
