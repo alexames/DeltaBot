@@ -34,7 +34,7 @@
 
     "last_comment_filename": "prev_id.txt",
 
-    "minimum_comment_length": 10,
+    "minimum_comment_length": 50,
 
     "scoreboard": {
         "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |",
