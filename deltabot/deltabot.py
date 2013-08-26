@@ -167,34 +167,35 @@ class DeltaBot(object):
     def scan_comment(self, comment):
         logging.info("Scanning comment %s by %s" % (comment.name, comment.author))
 
-        parent = self.reddit.get_info(thing_id=comment.parent_id)
+        if string_contains_token(comment.body, self.config.tokens):
+            parent = self.reddit.get_info(thing_id=comment.parent_id)
+            if parent.author.name is not self.config.account['username']:
 
-        if string_contains_token(comment.body, self.config.tokens) and parent.author.name is not self.config.account['username']:
+                if self.is_parent_commenter_author(comment):
+                    logging.info("No points awarded, parent is OP")
+                    comment.reply(self.config.messages['broken_rule'][0]).distinguish()
+                    return
+                elif self.points_already_awarded_to_ancestor(comment):
+                    logging.info("No points awarded, already awarded")
+                    comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
+                    return
+                elif len(comment.body) < self.minimum_comment_length:
+                    logging.info("No points awarded, too short")
+                    comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
+                    return
+                elif self.points_already_awarded(comment):
+                    # We scaned this comment more than once, no need to reply. Just continue on silently
+                    return
 
-            if self.is_parent_commenter_author(comment):
-                logging.info("No points awarded, parent is OP")
-                comment.reply(self.config.messages['broken_rule'][0]).distinguish()
-                return
-            if self.points_already_awarded_to_ancestor(comment):
-                logging.info("No points awarded, already awarded")
-                comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
-                return
-            if len(comment.body) < self.minimum_comment_length:
-                logging.info("No points awarded, too short")
-                comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
-                return
-            if self.points_already_awarded(comment):
-                # We scaned this comment more than once, no need to reply. Just continue on silently
-                return
-
-            self.award_points(parent, comment)
+                else:
+                    self.award_points(parent, comment)
 
 
     def scan_comments(self):
         """ Scan a given list of comments for tokens. If a token is found, award points. """
         logging.info("Scanning new comments")
 
-        for comment in self.subreddit.get_comments(params={'before': self.before_id}):
+        for comment in self.subreddit.get_comments(params={'before': self.before_id},limit=None):
             self.scan_comment(comment)
             if not self.before_id or comment.name > self.before_id:
                 self.before_id = comment.name
@@ -205,7 +206,7 @@ class DeltaBot(object):
         then get newest comments from the inbox. """
         logging.info("Scanning inbox")
 
-        messages = [message for message in self.reddit.get_unread()]
+        messages = [message for message in self.reddit.get_unread(unset_has_mail=True)]
         moderators = [mod.name for mod in self.reddit.get_moderators(self.config.subreddit)]
 
         for message in messages:
@@ -224,9 +225,6 @@ class DeltaBot(object):
 
                 elif message.subject.lower() == "stop":
                     self.running = False
-
-            message.mark_as_read()
-
 
     def update_leaderboard(self):
         """ Update the top 10 list with highest scores. """
@@ -274,12 +272,12 @@ class DeltaBot(object):
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit, parent_author)
             if user_wiki_page.page == parent_author:
-                add_link = "\n[%s](%s)" % (comment_submission_title, comment_url)
+                add_link = "\n\n* [%s](%s)" % (comment_submission_title, comment_url)
                 new_content = user_wiki_page.content_md + add_link
                 self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, new_content, "Updated delta links.")
         except:
             initial_text = "/u/%s has received deltas for the following comments:\n\n" % parent_author
-            add_link = "\n* [%s](%s)" % (comment_submission_title, comment_url)
+            add_link = "\n\n* [%s](%s)" % (comment_submission_title, comment_url)
             full_update = initial_text + add_link
             self.reddit.edit_wiki_page(self.config.subreddit, parent_author, full_update, "Created user's delta links page.")
             delta_tracker_page = self.reddit.get_wiki_page(self.config.subreddit, "delta_tracker")
