@@ -2,7 +2,7 @@
 
 Deltabot is a score keeping reddit bot originally designed for [/r/changemyview](http://reddit.com/r/changemyview)
 
-It works by reading a subreddit, looking for specific tokens that denote that a point should be awarded. If it finds one, it awards that user a point by adjusting thier flair.
+It works by reading a subreddit, looking for specific tokens that denote that a point should be awarded. If it finds one, it awards that user a point by adjusting their flair.
 
 ## Usage
 
