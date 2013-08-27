@@ -30,7 +30,7 @@ import praw
 import logging
 
 
-logging.getLogger('requests').setLevel(logging.WARNING) # hide messages from requests
+logging.getLogger('requests').setLevel(logging.WARNING)
 
 
 def get_first_int(string):
@@ -49,7 +49,7 @@ def flair_sorter(dic):
 
 
 def skippable_line(line):
-    """ Returns true if the give line is a quote or code """
+    """ Returns true if the given line is a quote or code """
     return re.search('(^    |^ *&gt;)', line) != None
 
 
@@ -133,6 +133,20 @@ class DeltaBot(object):
             css_class)
 
 
+    def already_replied(self, comment):
+        """ Returns true if Deltabot has replied to this comment """
+        replies = self.reddit.get_submission(comment.permalink).comments[0].replies
+        for reply in replies:
+            if reply.author.name == self.config.account['username']:
+                return True;
+        return False
+
+
+    def is_parent_commenter_author(self, comment):
+        """ Returns true if the author of the parent comment the submitter """
+        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author
+
+
     def points_already_awarded_to_ancestor(self, comment):
         """ Returns true if a point was awarded by the comment's author already
         in this branch of the comment tree """
@@ -151,51 +165,38 @@ class DeltaBot(object):
         return False
 
 
-    def points_already_awarded(self, comment):
-        """ Returns true if Deltabot has replied to this comment """
-        for reply in comment.replies:
-            if reply.author == self.config.account['username']:
-                return True;
-        return False
-
-
-    def is_parent_commenter_author(self, comment):
-        """ returns true if the author of the parent comment the submitter """
-        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author
-
-
     def scan_comment(self, comment):
         logging.info("Scanning comment %s by %s" % (comment.name, comment.author))
 
         if string_contains_token(comment.body, self.config.tokens):
             parent = self.reddit.get_info(thing_id=comment.parent_id)
-            if parent.author.name is not self.config.account['username']:
+            if parent.author.name is self.config.account['username']:
+                logging.info("No points awarded, replying to DeltaBot")
 
-                if self.is_parent_commenter_author(comment):
-                    logging.info("No points awarded, parent is OP")
-                    comment.reply(self.config.messages['broken_rule'][0]).distinguish()
-                    return
-                elif self.points_already_awarded_to_ancestor(comment):
-                    logging.info("No points awarded, already awarded")
-                    comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
-                    return
-                elif len(comment.body) < self.minimum_comment_length:
-                    logging.info("No points awarded, too short")
-                    comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
-                    return
-                elif self.points_already_awarded(comment):
-                    # We scaned this comment more than once, no need to reply. Just continue on silently
-                    return
+            elif self.already_replied(comment):
+                logging.info("No points awarded, already replied")
 
-                else:
-                    self.award_points(parent, comment)
+            elif len(comment.body) < self.minimum_comment_length:
+                logging.info("No points awarded, too short")
+                comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
+
+            elif self.is_parent_commenter_author(comment):
+                logging.info("No points awarded, parent is OP")
+                comment.reply(self.config.messages['broken_rule'][0]).distinguish()
+
+            elif self.points_already_awarded_to_ancestor(comment):
+                logging.info("No points awarded, already awarded")
+                comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
+
+            else:
+                self.award_points(parent, comment)
 
 
     def scan_comments(self):
         """ Scan a given list of comments for tokens. If a token is found, award points. """
         logging.info("Scanning new comments")
 
-        for comment in self.subreddit.get_comments(params={'before': self.before_id},limit=None):
+        for comment in self.subreddit.get_comments(params={'before': self.before_id}, limit=None):
             self.scan_comment(comment)
             if not self.before_id or comment.name > self.before_id:
                 self.before_id = comment.name
@@ -225,6 +226,8 @@ class DeltaBot(object):
 
                 elif message.subject.lower() == "stop":
                     self.running = False
+
+            message.mark_as_read()
 
     def update_leaderboard(self):
         """ Update the top 10 list with highest scores. """
@@ -295,13 +298,10 @@ class DeltaBot(object):
             logging.info("Starting iteration at %s" % self.before_id)
             old_before_id = self.before_id
 
-            try:
-                self.scan_comments()
-                self.scan_inbox()
-                if self.changes_made:
-                    self.update_leaderboard()
-            except Exception:
-                pass
+            self.scan_comments()
+            self.scan_inbox()
+            if self.changes_made:
+                self.update_leaderboard()
 
             logging.info("Iteration complete at %s" % self.before_id)
             if old_before_id is not self.before_id:
