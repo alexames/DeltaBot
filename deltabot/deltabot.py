@@ -30,6 +30,9 @@ import praw
 import logging
 
 
+from random import choice
+
+
 logging.getLogger('requests').setLevel(logging.WARNING)
 
 
@@ -104,12 +107,19 @@ class DeltaBot(object):
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
 
+    def get_message(self, key):
+        """ Given a type of message select one of the messages from the
+        configuration at random. """
+        messages = self.config.messages[key]
+        return choice(messages)
+
+
     def award_points(self, parent, comment):
         """ Awards a point. """
         logging.info("Awarding point to %s" % parent.author)
         self.add_points(parent.author)
         self.update_wiki_tracker(comment)
-        comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
+        comment.reply(self.get_message('confirmation') % parent.author).distinguish()
 
 
     def add_points(self, redditor, num_points=1):
@@ -178,15 +188,15 @@ class DeltaBot(object):
 
             elif len(comment.body) < self.minimum_comment_length:
                 logging.info("No points awarded, too short")
-                comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
+                comment.reply(self.get_message('too_little_text') % parent.author).distinguish()
 
             elif self.is_parent_commenter_author(comment):
                 logging.info("No points awarded, parent is OP")
-                comment.reply(self.config.messages['broken_rule'][0]).distinguish()
+                comment.reply(self.get_message('broken_rule')).distinguish()
 
             elif self.points_already_awarded_to_ancestor(comment):
                 logging.info("No points awarded, already awarded")
-                comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
+                comment.reply(self.get_message('already_awarded') % parent.author).distinguish()
 
             else:
                 self.award_points(parent, comment)
@@ -228,6 +238,7 @@ class DeltaBot(object):
                     self.running = False
 
             message.mark_as_read()
+
 
     def update_leaderboard(self):
         """ Update the top 10 list with highest scores. """
