@@ -11,6 +11,3 @@ config/config.json
 
 # temp files
 prev_id.txt
-
-# vagrant
-.vagrant
