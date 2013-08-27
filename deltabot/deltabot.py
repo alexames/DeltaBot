@@ -111,7 +111,7 @@ class DeltaBot(object):
         """ Given a type of message select one of the messages from the
         configuration at random. """
         messages = self.config.messages[key]
-        return choice(messages)
+        return choice(messages) + self.config.messages['append_to_all_messages']
 
 
     def award_points(self, parent, comment):
