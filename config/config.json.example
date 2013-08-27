@@ -18,7 +18,7 @@
             "You have already awarded /u/%s a delta in this comment tree.\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)]"
         ],
         "too_little_text": [
-            "This delta is currently disallowed as your comment contains either no or little text. Please include an explanation for how /u/%s changed your view. If you edit this in, replying to my comment will make me rescan yours.\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)]"
+            "This delta is currently disallowed as your comment contains either no or little text (comment rule 4). Please include an explanation for how /u/%s changed your view. If you edit this in, replying to my comment will make me rescan yours.\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)]"
         ],
         "broken_rule": [
             "You cannot award OP a delta as the moderators feel that allowing so would send the wrong message.\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)]"
