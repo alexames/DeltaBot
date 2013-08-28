@@ -213,18 +213,22 @@ class DeltaBot(object):
         for message in messages:
             logging.info("Scanning message %s from %s" % (message.name, message.author))
             if message.author.name in moderators:
-                if message.subject.lower() == "add":
+                command = message.subject.lower()
+                if command == "add":
                     ids = re.findall(self.comment_id_regex, message.body)
                     for id in ids:
                         comment = self.reddit.get_info(thing_id=u't1_{0}'.format(id))
                         if type(comment) is praw.objects.Comment:
                             self.scan_comment(comment)
 
-                elif message.subject.lower() == "remove":
+                elif command == "remove":
                     # Todo
                     pass
 
-                elif message.subject.lower() == "stop":
+                elif command == "reset":
+                    self.before_id = None
+
+                elif command == "stop":
                     self.running = False
 
             message.mark_as_read()
