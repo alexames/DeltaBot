@@ -325,7 +325,7 @@ class DeltaBot(object):
             delta_tracker_page = self.reddit.get_wiki_page(self.config.subreddit, "delta_tracker")
             delta_tracker_page_body = delta_tracker_page.content_md
             authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, parent_author)
-            new_link = "\n* /u/%s" % (parent_author)
+            new_link = "\n\n* /u/%s" % (parent_author)
             new_content = delta_tracker_page_body + new_link
             self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content, "Updated tracker page.")
 
