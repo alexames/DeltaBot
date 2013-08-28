@@ -168,10 +168,10 @@ class DeltaBot(object):
         return False
 
 
-    def scan_comment(self, comment):
+    def scan_comment(self, comment, validate=True):
         logging.info("Scanning comment %s by %s" % (comment.name, comment.author.name))
 
-        if string_contains_token(comment.body, self.config.tokens):
+        if string_contains_token(comment.body, self.config.tokens) or not validate:
             parent = self.reddit.get_info(thing_id=comment.parent_id)
             if parent.author.name is self.config.account['username']:
                 logging.info("No points awarded, replying to DeltaBot")
@@ -179,15 +179,15 @@ class DeltaBot(object):
             elif self.already_replied(comment):
                 logging.info("No points awarded, already replied")
 
-            elif self.is_comment_too_short(comment):
+            elif validate and self.is_comment_too_short(comment):
                 logging.info("No points awarded, too short")
                 comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
 
-            elif self.is_parent_commenter_author(comment):
+            elif validate and self.is_parent_commenter_author(comment):
                 logging.info("No points awarded, parent is OP")
                 comment.reply(self.config.messages['broken_rule'][0]).distinguish()
 
-            elif self.points_already_awarded_to_ancestor(comment):
+            elif validate and self.points_already_awarded_to_ancestor(comment):
                 logging.info("No points awarded, already awarded")
                 comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
 
@@ -211,12 +211,13 @@ class DeltaBot(object):
         moderators = [mod.name for mod in self.reddit.get_moderators(self.config.subreddit)]
         if message.author.name in moderators:
             command = message.subject.lower()
-            if command == "add":
+            validate = (command != "force add")
+            if command == "add" or command == "force add":
                 ids = re.findall(self.comment_id_regex, message.body)
                 for id in ids:
                     comment = self.reddit.get_info(thing_id=u't1_{0}'.format(id))
                     if type(comment) is praw.objects.Comment:
-                        self.scan_comment(comment)
+                        self.scan_comment(comment, validate=validate)
 
             elif command == "remove":
                 # Todo
