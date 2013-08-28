@@ -336,8 +336,8 @@ class DeltaBot(object):
             logging.info("Starting iteration at %s" % self.before_id)
             old_before_id = self.before_id
 
-            self.scan_comments()
             self.scan_inbox()
+            self.scan_comments()
             if self.changes_made:
                 self.update_leaderboard()
 
