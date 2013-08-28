@@ -40,8 +40,8 @@
     "minimum_comment_length": 50,
 
     "scoreboard": {
-        "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | ------: |",
-        "table_leader_entry": "\n| 1 | **/u/%s** | [%s](// \"deltas received\") |",
-        "table_entry": "\n| %s | /u/%s | [%s](// \"deltas received\") |"
+        "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | :------: |",
+        "table_leader_entry": "\n| 1 | **/u/%s** | [%s](// \"∆s\") |",
+        "table_entry": "\n| %s | /u/%s | [%s](// \"∆s\") |"
     }
 }

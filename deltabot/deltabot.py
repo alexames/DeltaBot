@@ -106,21 +106,17 @@ class DeltaBot(object):
                 longest = len(token)
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
-
     def get_message(self, key):
         """ Given a type of message select one of the messages from the
         configuration at random. """
         messages = self.config.messages[key]
         return choice(messages) + self.config.messages['append_to_all_messages']
 
-
-    def award_points(self, parent, comment):
+    def award_points(self, awardee, comment):
         """ Awards a point. """
-        logging.info("Awarding point to %s" % parent.author)
-        self.add_points(parent.author)
+        logging.info("Awarding point to %s" % awardee)
+        self.add_points(awardee)
         self.update_wiki_tracker(comment)
-        comment.reply(self.get_message('confirmation') % parent.author).distinguish()
-
 
     def add_points(self, redditor, num_points=1):
         """ Recalculate a user's score and update flair. """
@@ -141,6 +137,10 @@ class DeltaBot(object):
         self.subreddit.set_flair(redditor,
             self.config.flair['point_text'] % points,
             css_class)
+
+
+    def is_comment_too_short(self, comment):
+        return len(comment.body) < self.minimum_comment_length
 
 
     def already_replied(self, comment):
@@ -175,10 +175,10 @@ class DeltaBot(object):
         return False
 
 
-    def scan_comment(self, comment):
-        logging.info("Scanning comment %s by %s" % (comment.name, comment.author))
+    def scan_comment(self, comment, validate=True):
+        logging.info("Scanning comment %s by %s" % (comment.name, comment.author.name))
 
-        if string_contains_token(comment.body, self.config.tokens):
+        if string_contains_token(comment.body, self.config.tokens) or not validate:
             parent = self.reddit.get_info(thing_id=comment.parent_id)
             if parent.author.name is self.config.account['username']:
                 logging.info("No points awarded, replying to DeltaBot")
@@ -186,20 +186,21 @@ class DeltaBot(object):
             elif self.already_replied(comment):
                 logging.info("No points awarded, already replied")
 
-            elif len(comment.body) < self.minimum_comment_length:
+            elif validate and self.is_comment_too_short(comment):
                 logging.info("No points awarded, too short")
                 comment.reply(self.get_message('too_little_text') % parent.author).distinguish()
 
-            elif self.is_parent_commenter_author(comment):
+            elif validate and self.is_parent_commenter_author(comment):
                 logging.info("No points awarded, parent is OP")
                 comment.reply(self.get_message('broken_rule')).distinguish()
 
-            elif self.points_already_awarded_to_ancestor(comment):
+            elif validate and self.points_already_awarded_to_ancestor(comment):
                 logging.info("No points awarded, already awarded")
                 comment.reply(self.get_message('already_awarded') % parent.author).distinguish()
 
             else:
-                self.award_points(parent, comment)
+                self.award_points(parent.author.name, comment)
+                comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
 
 
     def scan_comments(self):
@@ -212,30 +213,64 @@ class DeltaBot(object):
                 self.before_id = comment.name
 
 
+    def scan_message(self, message):
+        logging.info("Scanning message %s from %s" % (message.name, message.author))
+        moderators = [mod.name for mod in self.reddit.get_moderators(self.config.subreddit)]
+        if message.author.name in moderators:
+            command = message.subject.lower()
+            validate = (command != "force add")
+            if command == "add" or command == "force add":
+                ids = re.findall(self.comment_id_regex, message.body)
+                for id in ids:
+                    comment = self.reddit.get_info(thing_id=u't1_{0}'.format(id))
+                    if type(comment) is praw.objects.Comment:
+                        self.scan_comment(comment, validate=validate)
+
+            elif command == "remove":
+                # Todo
+                pass
+
+            elif command == "reset":
+                self.before_id = None
+
+            elif command == "stop":
+                self.running = False
+
+
+    def scan_comment_reply(self, comment):
+        logging.info("Scanning comment reply from %s" % comment.author.name)
+
+        deltabots_comment = self.reddit.get_info(thing_id=comment.parent_id)
+        original_comment = self.reddit.get_info(thing_id=deltabots_comment.parent_id)
+        awardees_comment =  self.reddit.get_info(thing_id=original_comment.parent_id)
+
+        commenter = comment.author.name
+        awardee = awardees_comment.author.name
+        expected_message = self.config.messages['too_little_text'][0] % awardee
+
+        if (comment.author.name == original_comment.author.name
+                and deltabots_comment.body == expected_message
+                and not self.is_comment_too_short(original_comment)
+                and not self.is_parent_commenter_author(original_comment)
+                and not self.points_already_awarded_to_ancestor(original_comment)):
+            self.award_points(awardee, comment)
+            deltabots_comment.edit(self.config.messages['confirmation'][0] % awardee).distinguish()
+
+
     def scan_inbox(self):
         """ Scan a given list of messages for commands. If no list arg,
         then get newest comments from the inbox. """
         logging.info("Scanning inbox")
 
         messages = [message for message in self.reddit.get_unread(unset_has_mail=True)]
-        moderators = [mod.name for mod in self.reddit.get_moderators(self.config.subreddit)]
 
         for message in messages:
-            logging.info("Scanning message %s from %s" % (message.name, message.author))
-            if message.author.name in moderators:
-                if message.subject.lower() == "add":
-                    ids = re.findall(self.comment_id_regex, message.body)
-                    for id in ids:
-                        comment = self.reddit.get_info(thing_id=u't1_{0}'.format(id))
-                        if type(comment) is praw.objects.Comment:
-                            self.scan_comment(comment)
-
-                elif message.subject.lower() == "remove":
-                    # Todo
-                    pass
-
-                elif message.subject.lower() == "stop":
-                    self.running = False
+            # This is not pythonic. I'll need to research the right way to handle
+            # this in python.
+            if type(message) == praw.objects.Comment:
+                self.scan_comment_reply(message)
+            elif type(message) == praw.objects.Message:
+                self.scan_message(message)
 
             message.mark_as_read()
 
@@ -297,7 +332,7 @@ class DeltaBot(object):
             delta_tracker_page = self.reddit.get_wiki_page(self.config.subreddit, "delta_tracker")
             delta_tracker_page_body = delta_tracker_page.content_md
             authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, parent_author)
-            new_link = "\n* /u/%s" % (parent_author)
+            new_link = "\n\n* /u/%s" % (parent_author)
             new_content = delta_tracker_page_body + new_link
             self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content, "Updated tracker page.")
 
@@ -309,8 +344,8 @@ class DeltaBot(object):
             logging.info("Starting iteration at %s" % self.before_id)
             old_before_id = self.before_id
 
-            self.scan_comments()
             self.scan_inbox()
+            self.scan_comments()
             if self.changes_made:
                 self.update_leaderboard()
 
