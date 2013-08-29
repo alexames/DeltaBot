@@ -30,6 +30,9 @@ import praw
 import logging
 
 
+from random import choice
+
+
 logging.getLogger('requests').setLevel(logging.WARNING)
 
 
@@ -103,13 +106,17 @@ class DeltaBot(object):
                 longest = len(token)
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
+    def get_message(self, key):
+        """ Given a type of message select one of the messages from the
+        configuration at random. """
+        messages = self.config.messages[key]
+        return choice(messages) + self.config.messages['append_to_all_messages']
 
     def award_points(self, awardee, comment):
         """ Awards a point. """
         logging.info("Awarding point to %s" % awardee)
         self.add_points(awardee)
         self.update_wiki_tracker(comment)
-
 
     def add_points(self, redditor, num_points=1):
         """ Recalculate a user's score and update flair. """
@@ -181,15 +188,15 @@ class DeltaBot(object):
 
             elif validate and self.is_comment_too_short(comment):
                 logging.info("No points awarded, too short")
-                comment.reply(self.config.messages['too_little_text'][0] % parent.author).distinguish()
+                comment.reply(self.get_message('too_little_text') % parent.author).distinguish()
 
             elif validate and self.is_parent_commenter_author(comment):
                 logging.info("No points awarded, parent is OP")
-                comment.reply(self.config.messages['broken_rule'][0]).distinguish()
+                comment.reply(self.get_message('broken_rule')).distinguish()
 
             elif validate and self.points_already_awarded_to_ancestor(comment):
                 logging.info("No points awarded, already awarded")
-                comment.reply(self.config.messages['already_awarded'][0] % parent.author).distinguish()
+                comment.reply(self.get_message('already_awarded') % parent.author).distinguish()
 
             else:
                 self.award_points(parent.author.name, comment)
