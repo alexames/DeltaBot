@@ -176,7 +176,7 @@ class DeltaBot(object):
 
 
     def scan_comment(self, comment, validate=True):
-        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" % (self.subreddit, comment.submission.id, comment.id, comment.author.name))
+        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" % (self.config.subreddit, comment.submission.id, comment.id, comment.author.name))
 
         if string_contains_token(comment.body, self.config.tokens) or not validate:
             parent = self.reddit.get_info(thing_id=comment.parent_id)
@@ -281,11 +281,11 @@ class DeltaBot(object):
         top_scores = self.get_top_ten_scores()
         score_table = ["\n\n# Top Ten Viewchangers", self.config.scoreboard['table_head'],
                       self.config.scoreboard['table_leader_entry'] % ((top_scores[0][u'user'], \
-                      top_scores[0][u'flair_text'], self.subreddit, top_scores[0][u'user']))]
+                      top_scores[0][u'flair_text'], self.config.subreddit, top_scores[0][u'user']))]
 
         for i in range(9):
             score_table.append(self.config.scoreboard['table_entry'] % ((i+2, top_scores[i+1][u'user'], top_scores[i+1][u'flair_text'], \
-                                                                         self.subreddit, top_scores[i+1][u'user'])))
+                                                                         self.config.subreddit, top_scores[i+1][u'user'])))
 
         settings = self.subreddit.get_settings()
         old_desc = settings[u'description']
@@ -333,7 +333,7 @@ class DeltaBot(object):
             delta_tracker_page = self.reddit.get_wiki_page(self.config.subreddit, "delta_tracker")
             delta_tracker_page_body = delta_tracker_page.content_md
             authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, parent_author)
-            new_link = "\n\n* /u/%s" % (parent_author)
+            new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (parent_author, self.config.subreddit, parent_author)
             new_content = delta_tracker_page_body + new_link
             self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content, "Updated tracker page.")
 
