@@ -41,7 +41,7 @@
 
     "scoreboard": {
         "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | :------: |",
-        "table_leader_entry": "\n| 1 | **/u/%s** | [%s](/r/%s/wiki/%s) |",
+        "table_leader_entry": "\n| **1** | **/u/%s** | [**%s**](/r/%s/wiki/%s) |",
         "table_entry": "\n| %s | /u/%s | [%s](/r/%s/wiki/%s) |"
     }
 }
