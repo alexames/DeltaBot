@@ -147,7 +147,7 @@ class DeltaBot(object):
         """ Returns true if Deltabot has replied to this comment """
         replies = self.reddit.get_submission(comment.permalink).comments[0].replies
         for reply in replies:
-            if reply.author.name == self.config.account['username']:
+            if str(reply.author).lower() == self.config.account['username'].lower():
                 return True;
         return False
 
@@ -176,11 +176,11 @@ class DeltaBot(object):
 
 
     def scan_comment(self, comment, validate=True):
-        logging.info("Scanning comment %s by %s" % (comment.name, comment.author.name))
+        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" % (self.subreddit, comment.submission.id, comment.id, comment.author.name))
 
         if string_contains_token(comment.body, self.config.tokens) or not validate:
             parent = self.reddit.get_info(thing_id=comment.parent_id)
-            if parent.author.name is self.config.account['username']:
+            if str(parent.author.name).lower is self.config.account['username'].lower:
                 logging.info("No points awarded, replying to DeltaBot")
 
             elif self.already_replied(comment):
@@ -281,10 +281,11 @@ class DeltaBot(object):
         top_scores = self.get_top_ten_scores()
         score_table = ["\n\n# Top Ten Viewchangers", self.config.scoreboard['table_head'],
                       self.config.scoreboard['table_leader_entry'] % ((top_scores[0][u'user'], \
-                      top_scores[0][u'flair_text']))]
+                      top_scores[0][u'flair_text'], self.subreddit, top_scores[0][u'user']))]
 
         for i in range(9):
-            score_table.append(self.config.scoreboard['table_entry'] % ((i+2, top_scores[i+1][u'user'], top_scores[i+1][u'flair_text'])))
+            score_table.append(self.config.scoreboard['table_entry'] % ((i+2, top_scores[i+1][u'user'], top_scores[i+1][u'flair_text'], \
+                                                                         self.subreddit, top_scores[i+1][u'user'])))
 
         settings = self.subreddit.get_settings()
         old_desc = settings[u'description']
