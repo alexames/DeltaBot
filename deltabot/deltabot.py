@@ -28,8 +28,6 @@ import re
 import time
 import praw
 import logging
-
-
 from random import choice
 
 
@@ -38,13 +36,13 @@ logging.getLogger('requests').setLevel(logging.WARNING)
 
 def get_first_int(string):
     """ Returns the first integer in the string"""
-    match = re.search(u'(\d+)', string)
+    match = re.search('(\d+)', string)
     return int(match.group()) if match else 0
 
 
 def flair_sorter(dic):
     """ Get numeric value from flair. """
-    num = dic[u'flair_text']
+    num = dic['flair_text']
     if num:
         return get_first_int(num)
     else:
@@ -56,7 +54,7 @@ def skippable_line(line):
     return re.search('(^    |^ *&gt;)', line) != None
 
 
-def string_contains_token(text, tokens):
+def str_contains_token(text, tokens):
     """ Returns true if a given string contains one of the given tokens, as long
     as the token is not inside a quote or code block """
     lines = text.split('\n')
@@ -94,10 +92,12 @@ class DeltaBot(object):
     def __init__(self, config):
         logging.info('connecting to reddit')
         self.config = config
-        self.reddit = praw.Reddit(self.config.subreddit + ' bot', site_name=config.site_name)
-        self.reddit.login(*[self.config.account['username'], self.config.account['password']])
+        self.reddit = praw.Reddit(self.config.subreddit + ' bot',
+                                  site_name=config.site_name)
+        self.reddit.login(*[self.config.account['username'],
+                          self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
-        self.comment_id_regex = u'(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
+        self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.before_id = read_saved_id(self.config.last_comment_filename)
         self.changes_made = False
         longest = 0
@@ -106,17 +106,20 @@ class DeltaBot(object):
                 longest = len(token)
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
+
     def get_message(self, key):
         """ Given a type of message select one of the messages from the
         configuration at random. """
         messages = self.config.messages[key]
         return choice(messages) + self.config.messages['append_to_all_messages']
 
+
     def award_points(self, awardee, comment):
         """ Awards a point. """
         logging.info("Awarding point to %s" % awardee)
         self.add_points(awardee)
         self.update_wiki_tracker(comment)
+
 
     def add_points(self, redditor, num_points=1):
         """ Recalculate a user's score and update flair. """
@@ -145,16 +148,20 @@ class DeltaBot(object):
 
     def already_replied(self, comment):
         """ Returns true if Deltabot has replied to this comment """
-        replies = self.reddit.get_submission(comment.permalink).comments[0].replies
-        for reply in replies:
-            if str(reply.author).lower() == self.config.account['username'].lower():
+        comment = self.reddit.get_submission(comment.permalink).comments[0]
+        for reply in comment.replies:
+            author = str(reply.author).lower()
+            me = self.config.account['username'].lower()
+            if author == me:
                 return True;
         return False
 
 
     def is_parent_commenter_author(self, comment):
         """ Returns true if the author of the parent comment the submitter """
-        return self.reddit.get_info(thing_id=comment.parent_id).author == comment.submission.author
+        comment_author = self.reddit.get_info(thing_id=comment.parent_id).author
+        post_author = comment.submission.author
+        return comment_author == post_author
 
 
     def points_already_awarded_to_ancestor(self, comment):
@@ -169,62 +176,80 @@ class DeltaBot(object):
 
             if (comment.author == awarder
                 and parent.author == awardee
-                and string_contains_token(comment.body, self.config.tokens)):
+                and str_contains_token(comment.body, self.config.tokens)):
                 return True
 
         return False
 
 
-    def scan_comment(self, comment, validate=True):
-        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" % (self.config.subreddit, comment.submission.id, comment.id, comment.author.name))
+    def scan_comment(self, comment, strict=True):
+        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
+                     (self.config.subreddit, comment.submission.id, comment.id,
+                      comment.author.name))
 
-        if string_contains_token(comment.body, self.config.tokens) or not validate:
+        if str_contains_token(comment.body, self.config.tokens) or not strict:
             parent = self.reddit.get_info(thing_id=comment.parent_id)
-            if str(parent.author.name).lower is self.config.account['username'].lower:
+            parent_author = str(parent.author.name).lower()
+            me = self.config.account['username'].lower()
+            print parent_author, me, parent_author == me
+            if parent_author == me:
                 logging.info("No points awarded, replying to DeltaBot")
 
             elif self.already_replied(comment):
                 logging.info("No points awarded, already replied")
 
-            elif validate and self.is_comment_too_short(comment):
-                logging.info("No points awarded, too short")
-                comment.reply(self.get_message('too_little_text') % parent.author).distinguish()
-
-            elif validate and self.is_parent_commenter_author(comment):
+            elif strict and self.is_parent_commenter_author(comment):
                 logging.info("No points awarded, parent is OP")
-                comment.reply(self.get_message('broken_rule')).distinguish()
+                message = self.get_message('broken_rule')
+                comment.reply(message).distinguish()
 
-            elif validate and self.points_already_awarded_to_ancestor(comment):
+            elif strict and self.points_already_awarded_to_ancestor(comment):
                 logging.info("No points awarded, already awarded")
-                comment.reply(self.get_message('already_awarded') % parent.author).distinguish()
+                message = self.get_message('already_awarded') % parent.author
+                comment.reply(message).distinguish()
+
+            elif strict and self.is_comment_too_short(comment):
+                logging.info("No points awarded, too short")
+                message = self.get_message('too_little_text') % parent.author
+                comment.reply(message).distinguish()
 
             else:
                 self.award_points(parent.author.name, comment)
-                comment.reply(self.config.messages['confirmation'][0] % parent.author).distinguish()
+                message = self.get_message('confirmation') % parent.author
+                comment.reply(message).distinguish()
 
 
     def scan_comments(self):
-        """ Scan a given list of comments for tokens. If a token is found, award points. """
+        """ Scan a given list of comments for tokens. If a token is found,
+        award points. """
         logging.info("Scanning new comments")
 
-        for comment in self.subreddit.get_comments(params={'before': self.before_id}, limit=None):
+        for comment in self.subreddit.get_comments(params={'before':
+                                                           self.before_id},
+                                                   limit=None):
             self.scan_comment(comment)
             if not self.before_id or comment.name > self.before_id:
                 self.before_id = comment.name
 
 
+    def command_add(self, message_body, strict):
+        ids = re.findall(self.comment_id_regex, message_body)
+        for id in ids:
+            comment = self.reddit.get_info(thing_id='t1_%s' % id)
+            if type(comment) is praw.objects.Comment:
+                self.scan_comment(comment, strict=strict)
+
+
     def scan_message(self, message):
-        logging.info("Scanning message %s from %s" % (message.name, message.author))
-        moderators = [mod.name for mod in self.reddit.get_moderators(self.config.subreddit)]
-        if message.author.name in moderators:
+        logging.info("Scanning message %s from %s" % (message.name,
+                                                      message.author))
+        moderators = self.reddit.get_moderators(self.config.subreddit)
+        mod_names = [mod.name for mod in moderators]
+        if message.author.name in mod_names:
             command = message.subject.lower()
-            validate = (command != "force add")
             if command == "add" or command == "force add":
-                ids = re.findall(self.comment_id_regex, message.body)
-                for id in ids:
-                    comment = self.reddit.get_info(thing_id=u't1_{0}'.format(id))
-                    if type(comment) is praw.objects.Comment:
-                        self.scan_comment(comment, validate=validate)
+                strict = (command != "force add")
+                command_add(self, message_body, strict)
 
             elif command == "remove":
                 # Todo
@@ -240,21 +265,22 @@ class DeltaBot(object):
     def scan_comment_reply(self, comment):
         logging.info("Scanning comment reply from %s" % comment.author.name)
 
-        deltabots_comment = self.reddit.get_info(thing_id=comment.parent_id)
-        original_comment = self.reddit.get_info(thing_id=deltabots_comment.parent_id)
-        awardees_comment =  self.reddit.get_info(thing_id=original_comment.parent_id)
+        bots_comment = self.reddit.get_info(thing_id=comment.parent_id)
+        orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
+        awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
 
         commenter = comment.author.name
         awardee = awardees_comment.author.name
         expected_message = self.config.messages['too_little_text'][0] % awardee
 
-        if (comment.author.name == original_comment.author.name
+        if (comment.author.name == orig_comment.author.name
                 and deltabots_comment.body == expected_message
-                and not self.is_comment_too_short(original_comment)
-                and not self.is_parent_commenter_author(original_comment)
-                and not self.points_already_awarded_to_ancestor(original_comment)):
+                and not self.is_comment_too_short(orig_comment)
+                and not self.is_parent_commenter_author(orig_comment)
+                and not self.points_already_awarded_to_ancestor(orig_comment)):
             self.award_points(awardee, comment)
-            deltabots_comment.edit(self.config.messages['confirmation'][0] % awardee).distinguish()
+            message = self.get_message('confirmation')
+            deltabots_comment.edit(message % awardee).distinguish()
 
 
     def scan_inbox(self):
@@ -262,11 +288,11 @@ class DeltaBot(object):
         then get newest comments from the inbox. """
         logging.info("Scanning inbox")
 
-        messages = [message for message in self.reddit.get_unread(unset_has_mail=True)]
+        messages = self.reddit.get_unread(unset_has_mail=True)
 
         for message in messages:
-            # This is not pythonic. I'll need to research the right way to handle
-            # this in python.
+            # This is not pythonic. I'll need to research the right way to
+            # handle this in python.
             if type(message) == praw.objects.Comment:
                 self.scan_comment_reply(message)
             elif type(message) == praw.objects.Message:
@@ -292,7 +318,7 @@ class DeltaBot(object):
             score_table.append(table_entry)
 
         settings = self.subreddit.get_settings()
-        old_desc = settings[u'description']
+        old_desc = settings['description']
         # IMPORTANT: this splits the description on the _____ token.
         # Don't use said token for anything other than dividing sections
         # or else this breaks.
@@ -312,7 +338,7 @@ class DeltaBot(object):
         flair_list = sorted(flair_list, key=flair_sorter)
         flair_list.reverse()
         while len(flair_list) < 10:
-            flair_list.append({u'user': u'none', u'flair_text': u'no score'})
+            flair_list.append({'user': 'none', 'flair_text': 'no score'})
         return flair_list[0:10]
 
 
@@ -324,22 +350,41 @@ class DeltaBot(object):
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name.lower()
         try:
-            user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit, parent_author)
+            user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
+                                                    parent_author)
             if user_wiki_page.page == parent_author:
-                add_link = "\n\n* [%s](%s)" % (comment_submission_title, comment_url)
+                add_link = "\n\n* [%s](%s)" % (comment_submission_title,
+                                               comment_url)
                 new_content = user_wiki_page.content_md + add_link
-                self.reddit.edit_wiki_page(self.config.subreddit, user_wiki_page.page, new_content, "Updated delta links.")
+                self.reddit.edit_wiki_page(self.config.subreddit,
+                                           user_wiki_page.page,
+                                           new_content,
+                                           "Updated delta links.")
         except:
             initial_text = "/u/%s has received deltas for the following comments:\n\n" % parent_author
-            add_link = "\n\n* [%s](%s)" % (comment_submission_title, comment_url)
+            add_link = "\n\n* [%s](%s)" % (comment_submission_title,
+                                           comment_url)
             full_update = initial_text + add_link
-            self.reddit.edit_wiki_page(self.config.subreddit, parent_author, full_update, "Created user's delta links page.")
-            delta_tracker_page = self.reddit.get_wiki_page(self.config.subreddit, "delta_tracker")
+            self.reddit.edit_wiki_page(self.config.subreddit,
+                                       parent_author,
+                                       full_update,
+                                       "Created user's delta links page.")
+            delta_tracker_page = self.reddit.get_wiki_page(
+                                                          self.config.subreddit,
+                                                          "delta_tracker")
             delta_tracker_page_body = delta_tracker_page.content_md
-            authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (self.config.subreddit, parent_author)
-            new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (parent_author, self.config.subreddit, parent_author)
+            authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (
+                                                          self.config.subreddit,
+                                                          parent_author)
+            new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (
+                                                          parent_author,
+                                                          self.config.subreddit,
+                                                          parent_author)
             new_content = delta_tracker_page_body + new_link
-            self.reddit.edit_wiki_page(self.config.subreddit, "delta_tracker", new_content, "Updated tracker page.")
+            self.reddit.edit_wiki_page(self.config.subreddit,
+                                       "delta_tracker",
+                                       new_content,
+                                       "Updated tracker page.")
 
 
     def go(self):
@@ -356,7 +401,8 @@ class DeltaBot(object):
 
             logging.info("Iteration complete at %s" % self.before_id)
             if old_before_id is not self.before_id:
-                write_saved_id(self.config.last_comment_filename, self.before_id)
+                write_saved_id(self.config.last_comment_filename,
+                               self.before_id)
 
             logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             time.sleep(self.config.sleep_time)
