@@ -92,8 +92,10 @@ class DeltaBot(object):
     def __init__(self, config):
         logging.info('connecting to reddit')
         self.config = config
-        self.reddit = praw.Reddit(self.config.subreddit + ' bot')
-        self.reddit.login()
+        self.reddit = praw.Reddit(self.config.subreddit + ' bot',
+                                  site_name=config.site_name)
+        self.reddit.login(*[self.config.account['username'],
+                          self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.before_id = read_saved_id(self.config.last_comment_filename)

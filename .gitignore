@@ -8,7 +8,6 @@
 
 # config files
 config/config.json
-praw.ini
 
 # temp files
 prev_id.txt
