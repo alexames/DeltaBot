@@ -105,11 +105,19 @@ class DeltaBot(object):
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
 
-    def get_message(self, key):
+    def get_message(self, message_key):
         """ Given a type of message select one of the messages from the
         configuration at random. """
-        messages = self.config.messages[key]
+        messages = self.config.messages[message_key]
         return choice(messages) + self.config.messages['append_to_all_messages']
+
+
+    def string_matches_message(string, message_key, *args):
+        messages = self.config.messages[message_key]
+        for message in messages:
+            if string == (message % args):
+                return True
+        return False
 
 
     def award_points(self, awardee, comment):
@@ -269,10 +277,10 @@ class DeltaBot(object):
 
         commenter = comment.author.name
         awardee = awardees_comment.author.name
-        expected_message = self.config.messages['too_little_text'][0] % awardee
 
         if (comment.author.name == orig_comment.author.name
-                and deltabots_comment.body == expected_message
+                and string_matches_message(deltabots_comment.body,
+                                           'too_little_text', awardee)
                 and not self.is_comment_too_short(orig_comment)
                 and not self.is_parent_commenter_author(orig_comment)
                 and not self.points_already_awarded_to_ancestor(orig_comment)):
