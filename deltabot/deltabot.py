@@ -115,7 +115,9 @@ class DeltaBot(object):
     def string_matches_message(string, message_key, *args):
         messages = self.config.messages[message_key]
         for message in messages:
-            if string == (message % args):
+            appendation = self.config.messages['append_to_all_messages']
+            full_message = (message % args) + appendation
+            if string == full_message:
                 return True
         return False
 
