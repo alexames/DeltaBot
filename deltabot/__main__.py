@@ -9,7 +9,7 @@ def sandbox():
 
 
 def main():
-    c   = config.Config(os.path.dirname(__file__) + '/../config/config.json')
+    c   = config.Config(os.getcwd() + '/config/config.json')
     bot = deltabot.DeltaBot(c)
     bot.go()
 
