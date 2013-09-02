@@ -279,13 +279,17 @@ class DeltaBot(object):
         """ Update the top 10 list with highest scores. """
         logging.info("Updating leaderboard")
         top_scores = self.get_top_ten_scores()
-        score_table = ["\n\n# Top Ten Viewchangers", self.config.scoreboard['table_head'],
-                      self.config.scoreboard['table_leader_entry'] % ((top_scores[0][u'user'], \
-                      top_scores[0][u'flair_text'], self.config.subreddit, top_scores[0][u'user']))]
+        score_table = [
+            "\n\n# Top Ten Viewchangers",
+            self.config.scoreboard['table_head'],
+            self.config.scoreboard['table_leader_entry'] % (
+                top_scores[0]['user'], top_scores[0]['flair_text'])
+        ]
 
-        for i in range(9):
-            score_table.append(self.config.scoreboard['table_entry'] % ((i+2, top_scores[i+1][u'user'], top_scores[i+1][u'flair_text'], \
-                                                                         self.config.subreddit, top_scores[i+1][u'user'])))
+        for i in range(1, 10):
+            table_entry = self.config.scoreboard['table_entry'] % (
+                i+1, top_scores[i]['user'], top_scores[i]['flair_text'])
+            score_table.append(table_entry)
 
         settings = self.subreddit.get_settings()
         old_desc = settings[u'description']
