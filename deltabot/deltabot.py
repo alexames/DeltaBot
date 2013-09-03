@@ -201,7 +201,6 @@ class DeltaBot(object):
             parent = self.reddit.get_info(thing_id=comment.parent_id)
             parent_author = str(parent.author.name).lower()
             me = self.config.account['username'].lower()
-            print parent_author, me, parent_author == me
             if parent_author == me:
                 logging.info("No points awarded, replying to DeltaBot")
 
@@ -259,7 +258,7 @@ class DeltaBot(object):
             command = message.subject.lower()
             if command == "add" or command == "force add":
                 strict = (command != "force add")
-                command_add(self, message_body, strict)
+                self.command_add(message.body, strict)
 
             elif command == "remove":
                 # Todo
