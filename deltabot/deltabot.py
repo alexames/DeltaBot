@@ -114,7 +114,7 @@ class DeltaBot(object):
         return choice(messages) + self.config.messages['append_to_all_messages']
 
 
-    def string_matches_message(string, message_key, *args):
+    def string_matches_message(self, string, message_key, *args):
         messages = self.config.messages[message_key]
         for message in messages:
             appendation = self.config.messages['append_to_all_messages']
@@ -282,14 +282,14 @@ class DeltaBot(object):
         awardee = awardees_comment.author.name
 
         if (comment.author.name == orig_comment.author.name
-                and string_matches_message(deltabots_comment.body,
-                                           'too_little_text', awardee)
+                and self.string_matches_message(bots_comment.body,
+                                                'too_little_text', awardee)
                 and not self.is_comment_too_short(orig_comment)
                 and not self.is_parent_commenter_author(orig_comment)
                 and not self.points_already_awarded_to_ancestor(orig_comment)):
             self.award_points(awardee, comment)
             message = self.get_message('confirmation')
-            deltabots_comment.edit(message % awardee).distinguish()
+            bots_comment.edit(message % awardee).distinguish()
 
 
     def scan_inbox(self):
