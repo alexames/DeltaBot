@@ -28,6 +28,7 @@ import re
 import time
 import praw
 import logging
+import collections
 from random import choice
 
 
@@ -98,7 +99,8 @@ class DeltaBot(object):
                           self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
-        self.before_id = read_saved_id(self.config.last_comment_filename)
+        self.before = collections.deque([], 10)
+        self.before.append(read_saved_id(self.config.last_comment_filename))
         self.changes_made = False
         longest = 0
         for token in self.config.tokens:
@@ -195,7 +197,7 @@ class DeltaBot(object):
     def scan_comment(self, comment, strict=True):
         logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
                      (self.config.subreddit, comment.submission.id, comment.id,
-                      comment.author.name))
+                      comment.author.name if comment.author else "[deleted]"))
 
         if str_contains_token(comment.body, self.config.tokens) or not strict:
             parent = self.reddit.get_info(thing_id=comment.parent_id)
@@ -233,12 +235,20 @@ class DeltaBot(object):
         award points. """
         logging.info("Scanning new comments")
 
-        for comment in self.subreddit.get_comments(params={'before':
-                                                           self.before_id},
+        before_id = None
+        while self.before:
+            comment = self.reddit.get_info(thing_id=self.before[-1])
+            if comment.body == '[deleted]':
+                self.before.pop()
+            else:
+                before_id = self.before[-1]
+                break
+
+        for comment in self.subreddit.get_comments(params={'before': before_id},
                                                    limit=None):
             self.scan_comment(comment)
-            if not self.before_id or comment.name > self.before_id:
-                self.before_id = comment.name
+            if not self.before or comment.name > self.before[-1]:
+                self.before.append(comment.name)
 
 
     def command_add(self, message_body, strict):
@@ -265,7 +275,7 @@ class DeltaBot(object):
                 pass
 
             elif command == "reset":
-                self.before_id = None
+                self.before.clear()
 
             elif command == "stop":
                 self.running = False
@@ -308,6 +318,10 @@ class DeltaBot(object):
                 self.scan_message(message)
 
             message.mark_as_read()
+
+    def scan_mod_mail(self):
+
+        pass
 
 
     def update_leaderboard(self):
@@ -400,18 +414,20 @@ class DeltaBot(object):
         """ Start DeltaBot. """
         self.running = True
         while self.running:
-            logging.info("Starting iteration at %s" % self.before_id)
-            old_before_id = self.before_id
+            old_before_id = self.before[-1] if self.before else None
+            logging.info("Starting iteration at %s" % old_before_id or "None")
 
             self.scan_inbox()
+            self.scan_mod_mail()
             self.scan_comments()
             if self.changes_made:
                 self.update_leaderboard()
 
-            logging.info("Iteration complete at %s" % self.before_id)
-            if old_before_id is not self.before_id:
+            if self.before and old_before_id is not self.before[-1]:
                 write_saved_id(self.config.last_comment_filename,
-                               self.before_id)
+                               self.before[-1])
 
+            logging.info("Iteration complete at %s" % (self.before[-1] if
+                                                       self.before else "None"))
             logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             time.sleep(self.config.sleep_time)
