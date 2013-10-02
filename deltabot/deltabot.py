@@ -29,6 +29,7 @@ import sys
 import time
 import praw
 import logging
+import calendar
 import datetime
 import traceback
 import HTMLParser
@@ -399,6 +400,7 @@ class DeltaBot(object):
 
             message.mark_as_read()
 
+
     def scan_mod_mail(self):
         pass
 
@@ -406,9 +408,10 @@ class DeltaBot(object):
     def update_scoreboard(self):
         """ Update the top 10 list with highest scores. """
         logging.info("Updating scoreboard")
+        now = datetime.datetime.utcnow()
         top_scores = self.get_top_ten_scores_this_month()
         score_table = [
-            "\n\n# Top Ten Viewchangers",
+            "\n\n# Top Ten Viewchangers (%s)" % calendar.month_name[now.month],
             self.config.scoreboard['table_head'],
             self.config.scoreboard['table_leader_entry'] % (
                 top_scores[0]['user'], top_scores[0]['flair_text'])
@@ -521,7 +524,8 @@ class DeltaBot(object):
                 self.scan_inbox()
                 self.scan_mod_mail()
                 self.scan_comments()
-                self.update_scoreboard()
+                if self.changes_made:
+                    self.update_scoreboard()
             except:
                 print "Exception in user code:"
                 print '-'*60
