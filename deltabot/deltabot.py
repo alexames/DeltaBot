@@ -369,7 +369,6 @@ class DeltaBot(object):
         comment_url = comment.permalink
         comment_submission = comment.submission
         comment_submission_title = comment_submission.title
-        comment_submission_url = comment_submission.url
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name.lower()
         
