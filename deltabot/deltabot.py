@@ -108,9 +108,9 @@ def markdown_to_scoreboard(text):
 
 def scoreboard_to_markdown(scoreboard):
     text = ""
-    for k, v in scoreboard.iteritems():
-        text += "## %s %s\n" % (k, v["score"])
-        for link in v["links"]:
+    for key, value in scoreboard.iteritems():
+        text += "## %s %s\n" % (key, value["score"])
+        for link in value["links"]:
             text += "* %s\n" % link
         text += "\n"
     return text
@@ -163,9 +163,7 @@ class DeltaBot(object):
         self.update_wiki_tracker(comment)
 
 
-    def update_monthly_scoreboard(self, redditor, comment, num_points=1):
-        logging.info("Updating monthly scoreboard")
-        date = datetime.datetime.utcfromtimestamp(comment.created)
+    def get_this_months_scoreboard(self, date):
         page_title = "scoreboard_%s_%s" % (date.year, date.month)
         try:
             scoreboard_page = self.reddit.get_wiki_page(self.config.subreddit,
@@ -173,9 +171,13 @@ class DeltaBot(object):
             page_text = scoreboard_page.content_md
         except:
             page_text = ""
+        return markdown_to_scoreboard(page_text)
 
-        scoreboard = markdown_to_scoreboard(page_text)
 
+    def update_monthly_scoreboard(self, redditor, comment, num_points=1):
+        logging.info("Updating monthly scoreboard")
+        date = datetime.datetime.utcfromtimestamp(comment.created)
+        scoreboard = self.get_this_months_scoreboard(date)
         if redditor in scoreboard:
             entry = scoreboard[redditor]
         else:
@@ -367,6 +369,7 @@ class DeltaBot(object):
             if type(comment) is praw.objects.Comment:
                 self.rescan_comment(comment)
 
+
     def scan_comment_reply(self, comment):
         logging.info("Scanning comment reply from %s" % comment.author.name)
 
@@ -397,14 +400,13 @@ class DeltaBot(object):
             message.mark_as_read()
 
     def scan_mod_mail(self):
-
         pass
 
 
     def update_scoreboard(self):
         """ Update the top 10 list with highest scores. """
         logging.info("Updating scoreboard")
-        top_scores = self.get_top_ten_scores()
+        top_scores = self.get_top_ten_scores_this_month()
         score_table = [
             "\n\n# Top Ten Viewchangers",
             self.config.scoreboard['table_head'],
@@ -440,6 +442,23 @@ class DeltaBot(object):
         while len(flair_list) < 10:
             flair_list.append({'user': 'none', 'flair_text': 'no score'})
         return flair_list[0:10]
+
+
+    def get_top_ten_scores_this_month(self):
+        """ Get a list of the top 10 scores this month """
+        date = datetime.datetime.utcnow()
+        scoreboard = self.get_this_months_scoreboard(date)
+        score_list = []
+        for user, value in scoreboard.iteritems():
+            score_list.append({
+                'user': user,
+                'flair_text': self.config.flair['point_text'] % value['score']
+            })
+        score_list = sorted(score_list, key=flair_sorter)
+        score_list.reverse()
+        while len(score_list) < 10:
+            score_list.append({'user': 'none', 'flair_text': 'no score'})
+        return score_list[0:10]
 
 
     def update_wiki_tracker(self, comment):
@@ -502,8 +521,7 @@ class DeltaBot(object):
                 self.scan_inbox()
                 self.scan_mod_mail()
                 self.scan_comments()
-                if self.changes_made:
-                    self.update_scoreboard()
+                self.update_scoreboard()
             except:
                 print "Exception in user code:"
                 print '-'*60
