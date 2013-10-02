@@ -372,17 +372,21 @@ class DeltaBot(object):
         comment_submission_url = comment_submission.url
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name.lower()
+        
+        # try to get wiki page for user, throws exception if page doesn't exist
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
                                                     parent_author)
-            if user_wiki_page.page == parent_author:
-                add_link = "\n\n* [%s](%s)" % (comment_submission_title,
-                                               comment_url)
-                new_content = user_wiki_page.content_md + add_link
-                self.reddit.edit_wiki_page(self.config.subreddit,
-                                           user_wiki_page.page,
-                                           new_content,
-                                           "Updated delta links.")
+            
+            add_link = "\n\n* [%s](%s)" % (comment_submission_title,
+                                           comment_url)
+            new_content = user_wiki_page.content_md + add_link
+            self.reddit.edit_wiki_page(self.config.subreddit,
+                                       user_wiki_page.page,
+                                       new_content,
+                                       "Updated delta links.")
+        
+        # if page doesn't exist, create page with initial content
         except:
             initial_text = "/u/%s has received deltas for the following comments:\n\n" % parent_author
             add_link = "\n\n* [%s](%s)" % (comment_submission_title,
