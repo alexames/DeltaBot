@@ -393,26 +393,42 @@ class DeltaBot(object):
         
         # if page doesn't exist, create page with initial content
         except:
+            
+            # create header for new wiki page
             initial_text = "/u/%s has received deltas for the following comments:\n\n" % parent_author
+            
+            # create link and format as markdown list item
+            # "?context=2" means link shows comment earning the delta and the comment awarding it
             add_link = "\n\n* [%s](%s)" % (comment_submission_title,
-                                           comment_url)
+                                           comment_url + "?context=2")
+            
+            # combine header and link
             full_update = initial_text + add_link
+            
+            # write new content to wiki page
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        parent_author,
                                        full_update,
                                        "Created user's delta links page.")
+            
+            # get delta tracker wiki page
             delta_tracker_page = self.reddit.get_wiki_page(
                                                           self.config.subreddit,
                                                           "delta_tracker")
+            
+            # retrieve delta tracker page content as markdown string
             delta_tracker_page_body = delta_tracker_page.content_md
-            authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (
-                                                          self.config.subreddit,
-                                                          parent_author)
+            
+            # create link to user's wiki page as markdown list item
             new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (
                                                           parent_author,
                                                           self.config.subreddit,
                                                           parent_author)
+            
+            # append new link to old content
             new_content = delta_tracker_page_body + new_link
+            
+            # overwrite old page content with new page content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        "delta_tracker",
                                        new_content,
