@@ -377,10 +377,10 @@ class DeltaBot(object):
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
                                                     parent_author)
             
-            # create link with appropriate context level
+            # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
-            add_link = "\n\n* [%s](%s)" % (comment_submission_title + "?context=2",
-                                           comment_url)
+            add_link = "\n\n* [%s](%s)" % (comment_submission_title,
+                                           comment_url + "?context=2")
             new_content = user_wiki_page.content_md + add_link
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        user_wiki_page.page,
