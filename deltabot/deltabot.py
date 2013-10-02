@@ -381,7 +381,11 @@ class DeltaBot(object):
             # "?context=2" means link shows comment earning the delta and the comment awarding it
             add_link = "\n\n* [%s](%s)" % (comment_submission_title,
                                            comment_url + "?context=2")
+            
+            # get previous content as markdown string and append new content
             new_content = user_wiki_page.content_md + add_link
+            
+            # overwrite old content with new content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        user_wiki_page.page,
                                        new_content,
