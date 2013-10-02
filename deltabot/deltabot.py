@@ -28,6 +28,7 @@ import re
 import time
 import praw
 import logging
+import HTMLParser
 import collections
 from random import choice
 
@@ -378,7 +379,11 @@ class DeltaBot(object):
             if user_wiki_page.page == parent_author:
                 add_link = "\n\n* [%s](%s)" % (comment_submission_title,
                                                comment_url)
-                new_content = user_wiki_page.content_md + add_link
+                # convert &amp; to &
+                escaped_content_md = user_wiki_page.content_md
+                h = HTMLParser.HTMLParser()
+                unescaped_content_md = h.unescape(escaped_content_md)
+                new_content = unescaped_content_md + add_link
                 self.reddit.edit_wiki_page(self.config.subreddit,
                                            user_wiki_page.page,
                                            new_content,
