@@ -25,9 +25,12 @@
 
 
 import re
+import sys
 import time
 import praw
 import logging
+import datetime
+import traceback
 import HTMLParser
 import collections
 from random import choice
@@ -82,12 +85,35 @@ def read_saved_id(filename):
     try:
         id_file = open(filename, 'r')
         current = id_file.readline()
-        if current is "None":
+        if current == "None":
             current = None
         id_file.close()
         return current
     except IOError:
         return None
+
+
+def markdown_to_scoreboard(text):
+    scoreboard = {}
+    for line in text.split('\n'):
+        if line[:2] == '##':
+            tokens = line.split()
+            username = tokens[1]
+            score = int(tokens[2])
+            current_user = scoreboard[username] = { "links": [], "score": score }
+        elif line:
+            current_user["links"].append(line[2:])
+    return scoreboard
+
+
+def scoreboard_to_markdown(scoreboard):
+    text = ""
+    for k, v in scoreboard.iteritems():
+        text += "## %s %s\n" % (k, v["score"])
+        for link in v["links"]:
+            text += "* %s\n" % link
+        text += "\n"
+    return text
 
 
 class DeltaBot(object):
@@ -101,7 +127,9 @@ class DeltaBot(object):
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.before = collections.deque([], 10)
-        self.before.append(read_saved_id(self.config.last_comment_filename))
+        before_id = read_saved_id(self.config.last_comment_filename)
+        if before_id:
+            self.before.append(before_id)
         self.changes_made = False
         longest = 0
         for token in self.config.tokens:
@@ -130,11 +158,39 @@ class DeltaBot(object):
     def award_points(self, awardee, comment):
         """ Awards a point. """
         logging.info("Awarding point to %s" % awardee)
-        self.add_points(awardee)
+        self.adjust_point_flair(awardee)
+        self.update_monthly_scoreboard(awardee, comment)
         self.update_wiki_tracker(comment)
 
 
-    def add_points(self, redditor, num_points=1):
+    def update_monthly_scoreboard(self, redditor, comment, num_points=1):
+        logging.info("Updating monthly scoreboard")
+        date = datetime.datetime.utcfromtimestamp(comment.created)
+        page_title = "scoreboard_%s_%s" % (date.year, date.month)
+        try:
+            scoreboard_page = self.reddit.get_wiki_page(self.config.subreddit,
+                                                        page_title)
+            page_text = scoreboard_page.content_md
+        except:
+            page_text = ""
+
+        scoreboard = markdown_to_scoreboard(page_text)
+
+        if redditor in scoreboard:
+            entry = scoreboard[redditor]
+        else:
+            entry = scoreboard[redditor] = { "links": [], "score": 0 }
+
+        entry["links"].append("[%s](%s)" % (comment.submission.title,
+                                            comment.permalink))
+        entry["score"] += num_points
+
+        self.reddit.edit_wiki_page(self.config.subreddit, page_title,
+                                   scoreboard_to_markdown(scoreboard),
+                                   "Updating monthly scoreboard")
+
+
+    def adjust_point_flair(self, redditor, num_points=1):
         """ Recalculate a user's score and update flair. """
         self.changes_made = True
 
@@ -260,12 +316,16 @@ class DeltaBot(object):
                 self.scan_comment(comment, strict=strict)
 
 
+    def is_moderator(self, name):
+        moderators = self.reddit.get_moderators(self.config.subreddit)
+        mod_names = [mod.name for mod in moderators]
+        return name in mod_names
+
+
     def scan_message(self, message):
         logging.info("Scanning message %s from %s" % (message.name,
                                                       message.author))
-        moderators = self.reddit.get_moderators(self.config.subreddit)
-        mod_names = [mod.name for mod in moderators]
-        if message.author.name in mod_names:
+        if self.is_moderator(message.author.name):
             command = message.subject.lower()
             if command == "add" or command == "force add":
                 strict = (command != "force add")
@@ -275,6 +335,9 @@ class DeltaBot(object):
                 # Todo
                 pass
 
+            elif command == "rescan":
+                self.rescan_comments(message.body)
+
             elif command == "reset":
                 self.before.clear()
 
@@ -282,25 +345,40 @@ class DeltaBot(object):
                 self.running = False
 
 
+    def rescan_comment(self, bots_comment):
+        orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
+        awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
+        awardee = awardees_comment.author.name
+
+        if (self.string_matches_message(bots_comment.body, 'too_little_text',
+                                        awardee)
+                and not self.is_comment_too_short(orig_comment)
+                and not self.is_parent_commenter_author(orig_comment)
+                and not self.points_already_awarded_to_ancestor(orig_comment)):
+            self.award_points(awardee, orig_comment)
+            message = self.get_message('confirmation')
+            bots_comment.edit(message % awardee).distinguish()
+
+
+    def rescan_comments(self, message_body):
+        ids = re.findall(self.comment_id_regex, message_body)
+        for id in ids:
+            comment = self.reddit.get_info(thing_id='t1_%s' % id)
+            if type(comment) is praw.objects.Comment:
+                self.rescan_comment(comment)
+
     def scan_comment_reply(self, comment):
         logging.info("Scanning comment reply from %s" % comment.author.name)
 
         bots_comment = self.reddit.get_info(thing_id=comment.parent_id)
         orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
-        awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
 
-        commenter = comment.author.name
-        awardee = awardees_comment.author.name
+        valid_commenter = (comment.author
+                           and (comment.author == orig_comment.author
+                                or self.is_moderator(comment.author.name)))
 
-        if (comment.author.name == orig_comment.author.name
-                and self.string_matches_message(bots_comment.body,
-                                                'too_little_text', awardee)
-                and not self.is_comment_too_short(orig_comment)
-                and not self.is_parent_commenter_author(orig_comment)
-                and not self.points_already_awarded_to_ancestor(orig_comment)):
-            self.award_points(awardee, comment)
-            message = self.get_message('confirmation')
-            bots_comment.edit(message % awardee).distinguish()
+        if valid_commenter:
+            self.rescan_comment(bots_comment)
 
 
     def scan_inbox(self):
@@ -311,8 +389,6 @@ class DeltaBot(object):
         messages = self.reddit.get_unread(unset_has_mail=True)
 
         for message in messages:
-            # This is not pythonic. I'll need to research the right way to
-            # handle this in python.
             if type(message) == praw.objects.Comment:
                 self.scan_comment_reply(message)
             elif type(message) == praw.objects.Message:
@@ -325,9 +401,9 @@ class DeltaBot(object):
         pass
 
 
-    def update_leaderboard(self):
+    def update_scoreboard(self):
         """ Update the top 10 list with highest scores. """
-        logging.info("Updating leaderboard")
+        logging.info("Updating scoreboard")
         top_scores = self.get_top_ten_scores()
         score_table = [
             "\n\n# Top Ten Viewchangers",
@@ -422,11 +498,17 @@ class DeltaBot(object):
             old_before_id = self.before[-1] if self.before else None
             logging.info("Starting iteration at %s" % old_before_id or "None")
 
-            self.scan_inbox()
-            self.scan_mod_mail()
-            self.scan_comments()
-            if self.changes_made:
-                self.update_leaderboard()
+            try:
+                self.scan_inbox()
+                self.scan_mod_mail()
+                self.scan_comments()
+                if self.changes_made:
+                    self.update_scoreboard()
+            except:
+                print "Exception in user code:"
+                print '-'*60
+                traceback.print_exc(file=sys.stdout)
+                print '-'*60
 
             if self.before and old_before_id is not self.before[-1]:
                 write_saved_id(self.config.last_comment_filename,
