@@ -179,6 +179,7 @@ class DeltaBot(object):
         logging.info("Updating monthly scoreboard")
         date = datetime.datetime.utcfromtimestamp(comment.created)
         scoreboard = self.get_this_months_scoreboard(date)
+        page_title = "scoreboard_%s_%s" % (date.year, date.month)
         if redditor in scoreboard:
             entry = scoreboard[redditor]
         else:
