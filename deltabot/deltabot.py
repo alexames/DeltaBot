@@ -381,8 +381,9 @@ class DeltaBot(object):
             old_content = user_wiki_page.content_md
             
             # compile regex to search for current link formatting
-            regex = re.compile("\\* \\[%s\\]\\(%s\\) \\((\\d+)\\)" % (comment_submission_title,
-                                                                      comment_url + "\\?context=2"))
+            regex = re.compile("\* \[%s\]\(%s\) \(\d+\)" % (comment_submission_title,
+                                                                      comment_url + "\?context=2"))
+            
             # search old page content for link
             old_link = regex.search(old_content)
             
@@ -391,8 +392,13 @@ class DeltaBot(object):
             
             # old link exists, only increase number of deltas for post
             if old_link:
-                pass
-            # no old link, 
+                # use re.sub to increment number of deltas in link
+                new_link = re.sub("\((\d+)\)", lambda match: "(" + str(int(match.group(1)) + 1) + ")", old_link.group(0))
+                
+                #use re.sub to replace old link with new link
+                new_content = re.sub(regex, new_link, old_content)
+                
+            # no old link, create old link with initial count of 1
             else:
                 # create link and format as markdown list item
                 # "?context=2" means link shows comment earning the delta and the comment awarding it
@@ -402,6 +408,7 @@ class DeltaBot(object):
                  
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
+                
             # overwrite old content with new content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        user_wiki_page.page,
