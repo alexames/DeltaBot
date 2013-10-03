@@ -376,20 +376,38 @@ class DeltaBot(object):
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
                                                     parent_author)
+
+            # get old wiki page content as markdown string
+            old_content = user_wiki_page.content_md
             
-            # create link and format as markdown list item
-            # "?context=2" means link shows comment earning the delta and the comment awarding it
-            add_link = "\n\n* [%s](%s)" % (comment_submission_title,
-                                           comment_url + "?context=2")
+            # compile regex to search for current link formatting
+            regex = re.compile("\\* \\[%s\\]\\(%s\\) \\((\\d+)\\)" % (comment_submission_title,
+                                                                      comment_url + "\\?context=2"))
+            # search old page content for link
+            old_link = regex.search(old_content)
             
-            # get previous content as markdown string and append new content
-            new_content = user_wiki_page.content_md + add_link
+            # variable for updated wiki content
+            new_content = ""
             
+            # old link exists, only increase number of deltas for post
+            if old_link:
+                pass
+            # no old link, 
+            else:
+                # create link and format as markdown list item
+                # "?context=2" means link shows comment earning the delta and the comment awarding it
+                # "(1)" is the number of deltas earned from that comment
+                add_link = "\n\n* [%s](%s) (1)" % (comment_submission_title,
+                                                   comment_url + "?context=2")
+                 
+                # get previous content as markdown string and append new content
+                new_content = user_wiki_page.content_md + add_link
             # overwrite old content with new content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        user_wiki_page.page,
                                        new_content,
                                        "Updated delta links.")
+                
         
         # if page doesn't exist, create page with initial content
         except:
