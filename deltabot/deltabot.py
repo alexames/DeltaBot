@@ -414,13 +414,13 @@ class DeltaBot(object):
         score_table = [
             "\n\n# Top Ten Viewchangers (%s)" % calendar.month_name[now.month],
             self.config.scoreboard['table_head'],
-            self.config.scoreboard['table_leader_entry'] % (
-                top_scores[0]['user'], top_scores[0]['flair_text'])
+            self.config.scoreboard['table_leader_entry'] % (top_scores[0]['user'],
+            top_scores[0]['flair_text'], self.config.subreddit, top_scores[0]['user'])
         ]
 
         for i in range(1, 10):
-            table_entry = self.config.scoreboard['table_entry'] % (
-                i+1, top_scores[i]['user'], top_scores[i]['flair_text'])
+            table_entry = self.config.scoreboard['table_entry'] % (i+1, top_scores[i]['user'],
+                 top_scores[i]['flair_text'], self.config.subreddit, top_scores[0]['user'])
             score_table.append(table_entry)
 
         settings = self.subreddit.get_settings()
