@@ -366,11 +366,16 @@ class DeltaBot(object):
 
 
     def update_wiki_tracker(self, comment):
+        """ Update wiki page of person earning the delta
+        
+            Note: comment passed in is the comment awarding the delta, parent comment is the one earning the delta
+        """
         comment_url = comment.permalink
-        comment_submission = comment.submission
-        comment_submission_title = comment_submission.title
+        submission_url = comment.submission.permalink
+        submission_title = comment.submission.title
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name.lower()
+        awarder_name = comment.author.name.lower()
         
         # try to get wiki page for user, throws exception if page doesn't exist
         try:
@@ -381,8 +386,8 @@ class DeltaBot(object):
             old_content = user_wiki_page.content_md
             
             # compile regex to search for current link formatting
-            regex = re.compile("\* \[%s\]\(%s\) \(\d+\)" % (comment_submission_title,
-                                                                      comment_url + "\?context=2"))
+            # only matches links that are correctly formatted, so will not be broken by malformed or links made by previous versions of DeltaBot
+            regex = re.compile("\\[%s\\]\(%s\\) \\(\d+\\)" % (re.escape(submission_title), re.escape(submission_url)))
             
             # search old page content for link
             old_link = regex.search(old_content)
@@ -395,6 +400,9 @@ class DeltaBot(object):
                 # use re.sub to increment number of deltas in link
                 new_link = re.sub("\((\d+)\)", lambda match: "(" + str(int(match.group(1)) + 1) + ")", old_link.group(0))
                 
+                # insert link to new delta
+                new_link += "\n* [Awarded by %s](%s)" % (awarder_name, comment_url + "?context=2")
+                
                 #use re.sub to replace old link with new link
                 new_content = re.sub(regex, new_link, old_content)
                 
@@ -402,9 +410,8 @@ class DeltaBot(object):
             else:
                 # create link and format as markdown list item
                 # "?context=2" means link shows comment earning the delta and the comment awarding it
-                # "(1)" is the number of deltas earned from that comment
-                add_link = "\n\n* [%s](%s) (1)" % (comment_submission_title,
-                                                   comment_url + "?context=2")
+                # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
+                add_link = "\n\n[%s](%s) (1)\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
                  
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
@@ -425,8 +432,7 @@ class DeltaBot(object):
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
             # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
-            add_link = "\n\n* [%s](%s) (1)" % (comment_submission_title,
-                                           comment_url + "?context=2")
+            add_link = "\n\n* [%s](%s) (1)\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
             
             # combine header and link
             full_update = initial_text + add_link
@@ -436,6 +442,8 @@ class DeltaBot(object):
                                        parent_author,
                                        full_update,
                                        "Created user's delta links page.")
+            
+            """Add new awardee to Delta Tracker wiki page"""
             
             # get delta tracker wiki page
             delta_tracker_page = self.reddit.get_wiki_page(
