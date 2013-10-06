@@ -538,7 +538,7 @@ class DeltaBot(object):
                 
         
         # if page doesn't exist, create page with initial content
->>>>>>> 01dcd3ccf621dcc763d35cae39a491a33da70e92
+#>>>>>>> 01dcd3ccf621dcc763d35cae39a491a33da70e92
         except:
             
             # create header for new wiki page
