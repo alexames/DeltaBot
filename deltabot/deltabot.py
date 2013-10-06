@@ -466,48 +466,118 @@ class DeltaBot(object):
 
 
     def update_wiki_tracker(self, comment):
+        """ Update wiki page of person earning the delta
+        
+            Note: comment passed in is the comment awarding the delta, parent comment is the one earning the delta
+        """
         comment_url = comment.permalink
-        comment_submission = comment.submission
-        comment_submission_title = comment_submission.title
-        comment_submission_url = comment_submission.url
+        submission_url = comment.submission.permalink
+        submission_title = comment.submission.title
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name.lower()
+        awarder_name = comment.author.name.lower()
+        
+        # try to get wiki page for user, throws exception if page doesn't exist
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
                                                     parent_author)
-            if user_wiki_page.page == parent_author:
-                add_link = "\n\n* [%s](%s)" % (comment_submission_title,
-                                               comment_url)
-                # convert &amp; to &
-                escaped_content_md = user_wiki_page.content_md
-                h = HTMLParser.HTMLParser()
-                unescaped_content_md = h.unescape(escaped_content_md)
-                new_content = unescaped_content_md + add_link
-                self.reddit.edit_wiki_page(self.config.subreddit,
-                                           user_wiki_page.page,
-                                           new_content,
-                                           "Updated delta links.")
+# <<<<<<< HEAD
+#            if user_wiki_page.page == parent_author:
+#                add_link = "\n\n* [%s](%s)" % (comment_submission_title,
+#                                               comment_url)
+#                # convert &amp; to &
+#                escaped_content_md = user_wiki_page.content_md
+#                h = HTMLParser.HTMLParser()
+#                unescaped_content_md = h.unescape(escaped_content_md)
+#                new_content = unescaped_content_md + add_link
+#                self.reddit.edit_wiki_page(self.config.subreddit,
+#                                           user_wiki_page.page,
+#                                           new_content,
+#                                           "Updated delta links.")
+#=======
+
+            # get old wiki page content as markdown string
+            old_content = user_wiki_page.content_md
+            
+            # compile regex to search for current link formatting
+            # only matches links that are correctly formatted, so will not be broken by malformed or links made by previous versions of DeltaBot
+            regex = re.compile("\\[%s\\]\(%s\\) \\(\d+\\)" % (re.escape(submission_title), re.escape(submission_url)))
+            
+            # search old page content for link
+            old_link = regex.search(old_content)
+            
+            # variable for updated wiki content
+            new_content = ""
+            
+            # old link exists, only increase number of deltas for post
+            if old_link:
+                # use re.sub to increment number of deltas in link
+                new_link = re.sub("\((\d+)\)", lambda match: "(" + str(int(match.group(1)) + 1) + ")", old_link.group(0))
+                
+                # insert link to new delta
+                new_link += "\n* [Awarded by %s](%s)" % (awarder_name, comment_url + "?context=2")
+                
+                #use re.sub to replace old link with new link
+                new_content = re.sub(regex, new_link, old_content)
+                
+            # no old link, create old link with initial count of 1
+            else:
+                # create link and format as markdown list item
+                # "?context=2" means link shows comment earning the delta and the comment awarding it
+                # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
+                add_link = "\n\n[%s](%s) (1)\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
+                 
+                # get previous content as markdown string and append new content
+                new_content = user_wiki_page.content_md + add_link
+                
+            # overwrite old content with new content
+            self.reddit.edit_wiki_page(self.config.subreddit,
+                                       user_wiki_page.page,
+                                       new_content,
+                                       "Updated delta links.")
+                
+        
+        # if page doesn't exist, create page with initial content
+>>>>>>> 01dcd3ccf621dcc763d35cae39a491a33da70e92
         except:
+            
+            # create header for new wiki page
             initial_text = "/u/%s has received deltas for the following comments:\n\n" % parent_author
-            add_link = "\n\n* [%s](%s)" % (comment_submission_title,
-                                           comment_url)
+            
+            # create link and format as markdown list item
+            # "?context=2" means link shows comment earning the delta and the comment awarding it
+            # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
+            add_link = "\n\n[%s](%s) (1)\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
+            
+            # combine header and link
             full_update = initial_text + add_link
+            
+            # write new content to wiki page
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        parent_author,
                                        full_update,
                                        "Created user's delta links page.")
+            
+            """Add new awardee to Delta Tracker wiki page"""
+            
+            # get delta tracker wiki page
             delta_tracker_page = self.reddit.get_wiki_page(
                                                           self.config.subreddit,
                                                           "delta_tracker")
+            
+            # retrieve delta tracker page content as markdown string
             delta_tracker_page_body = delta_tracker_page.content_md
-            authors_page = "http://www.reddit.com/r/%s/wiki/%s" % (
-                                                          self.config.subreddit,
-                                                          parent_author)
+            
+            # create link to user's wiki page as markdown list item
             new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (
                                                           parent_author,
                                                           self.config.subreddit,
                                                           parent_author)
+            
+            # append new link to old content
             new_content = delta_tracker_page_body + new_link
+            
+            # overwrite old page content with new page content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        "delta_tracker",
                                        new_content,
