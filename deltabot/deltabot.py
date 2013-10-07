@@ -502,7 +502,7 @@ class DeltaBot(object):
                 new_link = re.sub("\((\d+)\)", lambda match: "(" + str(int(match.group(1)) + 1) + ")", old_link.group(0))
                 
                 # insert link to new delta
-                new_link += "\n* [Awarded by %s](%s)" % (awarder_name, comment_url + "?context=2")
+                new_link += "\n\n* [Awarded by %s](%s)" % (awarder_name, comment_url + "?context=2")
                 
                 #use re.sub to replace old link with new link
                 new_content = re.sub(regex, new_link, old_content)
