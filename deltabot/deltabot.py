@@ -225,11 +225,16 @@ class DeltaBot(object):
     def already_replied(self, comment):
         """ Returns true if Deltabot has replied to this comment """
         comment = self.reddit.get_submission(comment.permalink).comments[0]
+        message = self.get_message('confirmation')
         for reply in comment.replies:
             author = str(reply.author).lower()
             me = self.config.account['username'].lower()
             if author == me:
-                return True;
+                if str(message)[0:15] in str(reply):
+                    return True
+                else:
+                    reply.delete()
+                    return False                 
         return False
 
 
