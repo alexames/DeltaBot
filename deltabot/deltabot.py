@@ -287,7 +287,8 @@ class DeltaBot(object):
 
             else:
                 self.award_points(parent.author.name, comment)
-                message = self.get_message('confirmation') % parent.author
+                message = self.get_message('confirmation') % (parent.author,
+                    self.config.subreddit, parent.author)
                 comment.reply(message).distinguish()
 
 
