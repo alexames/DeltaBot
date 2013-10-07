@@ -481,20 +481,6 @@ class DeltaBot(object):
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
                                                     parent_author)
-# <<<<<<< HEAD
-#            if user_wiki_page.page == parent_author:
-#                add_link = "\n\n* [%s](%s)" % (comment_submission_title,
-#                                               comment_url)
-#                # convert &amp; to &
-#                escaped_content_md = user_wiki_page.content_md
-#                h = HTMLParser.HTMLParser()
-#                unescaped_content_md = h.unescape(escaped_content_md)
-#                new_content = unescaped_content_md + add_link
-#                self.reddit.edit_wiki_page(self.config.subreddit,
-#                                           user_wiki_page.page,
-#                                           new_content,
-#                                           "Updated delta links.")
-#=======
 
             # get old wiki page content as markdown string
             old_content = user_wiki_page.content_md
@@ -525,7 +511,7 @@ class DeltaBot(object):
                 # create link and format as markdown list item
                 # "?context=2" means link shows comment earning the delta and the comment awarding it
                 # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
-                add_link = "\n\n[%s](%s) (1)\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
+                add_link = "\n\n[%s](%s) (1)\n\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
                  
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
@@ -536,18 +522,16 @@ class DeltaBot(object):
                                        new_content,
                                        "Updated delta links.")
                 
-        
         # if page doesn't exist, create page with initial content
-#>>>>>>> 01dcd3ccf621dcc763d35cae39a491a33da70e92
         except:
             
             # create header for new wiki page
-            initial_text = "/u/%s has received deltas for the following comments:\n\n" % parent_author
+            initial_text = "/u/%s has received deltas for the following comments:" % parent_author
             
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
             # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
-            add_link = "\n\n[%s](%s) (1)\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
+            add_link = "\n\n[%s](%s) (1)\n\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
             
             # combine header and link
             full_update = initial_text + add_link
