@@ -138,6 +138,9 @@ class DeltaBot(object):
                 longest = len(token)
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
+    def send_first_time_message(self, parent):
+        self.reddit.send_message(parent.author.name, "Congratulations on your first delta!", self.config.private_message) % self.config.subreddit, parent.author.name
+
 
     def get_message(self, message_key):
         """ Given a type of message select one of the messages from the
@@ -205,6 +208,8 @@ class DeltaBot(object):
         else:
             points = 0
             css_class = ''
+            parent = self.reddit.get_info(thing_id=comment.parent_id)
+            send_first_time_message(parent)
 
         points += num_points
         if self.config.flair['css_class'] not in css_class:
