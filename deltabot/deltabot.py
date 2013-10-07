@@ -138,9 +138,8 @@ class DeltaBot(object):
                 longest = len(token)
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
-    def send_first_time_message(self, parent):
-        self.reddit.send_message(parent.author.name, "Congratulations on your first delta!", self.config.private_message) % self.config.subreddit, parent.author.name
-
+    def send_first_time_message(self, recipient_name):
+        self.reddit.send_message(recipient_name, "Congratulations on your first delta!", self.config.private_message)
 
     def get_message(self, message_key):
         """ Given a type of message select one of the messages from the
@@ -481,6 +480,7 @@ class DeltaBot(object):
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name.lower()
         awarder_name = comment.author.name.lower()
+        today = datetime.date.today()
         
         # try to get wiki page for user, throws exception if page doesn't exist
         try:
@@ -492,7 +492,7 @@ class DeltaBot(object):
             
             # compile regex to search for current link formatting
             # only matches links that are correctly formatted, so will not be broken by malformed or links made by previous versions of DeltaBot
-            regex = re.compile("\\[%s\\]\(%s\\) \\(\d+\\)" % (re.escape(submission_title), re.escape(submission_url)))
+            regex = re.compile("\\* \\[%s\\]\\(%s\\) \\(\d+\\)" % (re.escape(submission_title), re.escape(submission_url)))
             
             # search old page content for link
             old_link = regex.search(old_content)
@@ -506,7 +506,9 @@ class DeltaBot(object):
                 new_link = re.sub("\((\d+)\)", lambda match: "(" + str(int(match.group(1)) + 1) + ")", old_link.group(0))
                 
                 # insert link to new delta
-                new_link += "\n\n* [Awarded by %s](%s)" % (awarder_name, comment_url + "?context=2")
+                new_link += "\n\n    1. [Awarded by %s](%s) on %s/%s/%s" % (awarder_name, 
+                                                                            comment_url + "?context=2", 
+                                                                            today.month, today.day, today.year)
                 
                 #use re.sub to replace old link with new link
                 new_content = re.sub(regex, new_link, old_content)
@@ -516,7 +518,11 @@ class DeltaBot(object):
                 # create link and format as markdown list item
                 # "?context=2" means link shows comment earning the delta and the comment awarding it
                 # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
-                add_link = "\n\n[%s](%s) (1)\n\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
+                add_link = "\n\n* [%s](%s) (1)\n\n    1. [Awarded by %s](%s) on %s/%s/%s" % (submission_title, 
+                                                                                             submission_url, 
+                                                                                             awarder_name, 
+                                                                                             comment_url + "?context=2", 
+                                                                                             today.month, today.day, today.year)
                  
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
@@ -536,7 +542,11 @@ class DeltaBot(object):
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
             # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
-            add_link = "\n\n[%s](%s) (1)\n\n* [Awarded by %s](%s)" % (submission_title, submission_url, awarder_name, comment_url + "?context=2")
+            add_link = "\n\n* [%s](%s) (1)\n\n    1. [Awarded by %s](%s) on %s/%s/%s" % (submission_title, 
+                                                                                         submission_url, 
+                                                                                         awarder_name, 
+                                                                                         comment_url + "?context=2", 
+                                                                                         today.month, today.day, today.year)
             
             # combine header and link
             full_update = initial_text + add_link
