@@ -208,8 +208,7 @@ class DeltaBot(object):
         else:
             points = 0
             css_class = ''
-            parent = self.reddit.get_info(thing_id=comment.parent_id)
-            send_first_time_message(parent)
+            self.send_first_time_message(redditor)
 
         points += num_points
         if self.config.flair['css_class'] not in css_class:
