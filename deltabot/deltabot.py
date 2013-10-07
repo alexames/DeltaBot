@@ -426,7 +426,7 @@ class DeltaBot(object):
 
         for i in range(1, 10):
             table_entry = self.config.scoreboard['table_entry'] % (i+1, top_scores[i]['user'],
-                 top_scores[i]['flair_text'], self.config.subreddit, top_scores[0]['user'])
+                 top_scores[i]['flair_text'], self.config.subreddit, top_scores[i]['user'])
             score_table.append(table_entry)
 
         settings = self.subreddit.get_settings()
