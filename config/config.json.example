@@ -8,14 +8,14 @@
 
     "sleep_time": 60,
 
-    "private_message": "Congratulations; you've earned your first delta!\n\nAs you may already know, a delta (&#8710;) is given when a comment has changed someone's view. For a more detailed explanation of the delta system, [see here](http://www.reddit.com/r/changemyview/wiki/deltabot).\n\n/u/DeltaBot has updated your user flair and created [your own wiki page](wiki_page_url) which will be updated every time you earn a delta. If you do well, you may find yourself on our [leaderboards](http://www.reddit.com/r/changemyview/wiki/leaderboards) (the monthly one is also featured in our sidebar).\n\nGood luck, and happy CMVing!\n\n_____\n\n*[^I ^am ^a ^bot](https://github.com/alexames/DeltaBot)^, ^and ^this ^action ^was ^performed ^automatically. ^Please [^contact ^the ^moderators ^of ^CMV](http://www.reddit.com/message/compose?to=%2Fr%2Fchangemyview) ^if ^you ^have ^any ^further ^questions ^or ^concerns.*",
+    "private_message": "Congratulations; you've earned your first delta!\n\nAs you may already know, a delta (&#8710;) is given when a comment has changed someone's view. For a more detailed explanation of the delta system, [see here](http://www.reddit.com/r/changemyview/wiki/deltabot).\n\n/u/DeltaBot has updated your user flair and created [your own wiki page](/r/%s/wiki/%s) which will be updated every time you earn a delta. If you do well, you may find yourself on our [leaderboards](http://www.reddit.com/r/changemyview/wiki/leaderboards) (the monthly one is also featured in our sidebar).\n\nGood luck, and happy CMVing!\n\n_____\n\n*[^I ^am ^a ^bot](https://github.com/alexames/DeltaBot)^, ^and ^this ^action ^was ^performed ^automatically. ^Please [^contact ^the ^moderators ^of ^CMV](http://www.reddit.com/message/compose?to=%2Fr%2Fchangemyview) ^if ^you ^have ^any ^further ^questions ^or ^concerns.*",
 
     "messages": {
 
         "append_to_all_messages": "\n\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)][[Subreddit](http://www.reddit.com/r/DeltaBot/)]",
 
         "confirmation": [
-            "Confirmed: 1 delta awarded to /u/%s."
+            "Confirmed: 1 delta awarded to /u/%s. Click [here](/r/%s/wiki/%s) to see a wiki page with other deltas they have received."
         ],
         "already_awarded": [
             "You have already awarded /u/%s a delta in this comment tree."
