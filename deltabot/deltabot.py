@@ -364,8 +364,9 @@ class DeltaBot(object):
                 and not self.is_parent_commenter_author(orig_comment)
                 and not self.points_already_awarded_to_ancestor(orig_comment)):
             self.award_points(awardee, orig_comment)
-            message = self.get_message('confirmation')
-            bots_comment.edit(message % awardee).distinguish()
+            message = self.get_message('confirmation') % (awardee,
+                    self.config.subreddit, awardee)
+            bots_comment.edit(message).distinguish()
 
 
     def rescan_comments(self, message_body):
