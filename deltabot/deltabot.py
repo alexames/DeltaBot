@@ -32,7 +32,7 @@ import logging
 import calendar
 import datetime
 import traceback
-import HTMLParser
+from HTMLParser import HTMLParser
 import collections
 from random import choice
 
@@ -483,8 +483,8 @@ class DeltaBot(object):
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
                                                     parent_author)
 
-            # get old wiki page content as markdown string
-            old_content = user_wiki_page.content_md
+            # get old wiki page content as markdown string, and unescaped an previously escaped HTML characters
+            old_content = HTMLParser().unescape(user_wiki_page.content_md)
             
             # compile regex to search for current link formatting
             # only matches links that are correctly formatted, so will not be broken by malformed or links made by previous versions of DeltaBot
