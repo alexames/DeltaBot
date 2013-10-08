@@ -201,7 +201,11 @@ class DeltaBot(object):
         self.changes_made = True
 
         flair = self.subreddit.get_flair(redditor)
-        if flair:
+        if flair['flair_text'] == None:
+            points = 0
+            css_class = ''
+            self.send_first_time_message(redditor)
+        elif flair:
             points = get_first_int(flair['flair_text'])
             css_class = flair['flair_css_class']
         else:
