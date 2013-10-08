@@ -201,7 +201,11 @@ class DeltaBot(object):
         self.changes_made = True
 
         flair = self.subreddit.get_flair(redditor)
-        if flair:
+        if flair['flair_text'] == None:
+            points = 0
+            css_class = ''
+            self.send_first_time_message(redditor)
+        elif flair:
             points = get_first_int(flair['flair_text'])
             css_class = flair['flair_css_class']
         else:
@@ -512,7 +516,7 @@ class DeltaBot(object):
                 new_link = re.sub("\((\d+)\)", lambda match: "(" + str(int(match.group(1)) + 1) + ")", old_link.group(0))
                 
                 # insert link to new delta
-                new_link += "\n\n    1. [Awarded by %s](%s) on %s/%s/%s" % (awarder_name, 
+                new_link += "\n    1. [Awarded by %s](%s) on %s/%s/%s" % (awarder_name, 
                                                                             comment_url + "?context=2", 
                                                                             today.month, today.day, today.year)
                 
@@ -524,7 +528,7 @@ class DeltaBot(object):
                 # create link and format as markdown list item
                 # "?context=2" means link shows comment earning the delta and the comment awarding it
                 # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
-                add_link = "\n\n* [%s](%s) (1)\n\n    1. [Awarded by %s](%s) on %s/%s/%s" % (submission_title, 
+                add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by %s](%s) on %s/%s/%s" % (submission_title, 
                                                                                              submission_url, 
                                                                                              awarder_name, 
                                                                                              comment_url + "?context=2", 
