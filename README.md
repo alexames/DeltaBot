@@ -6,7 +6,9 @@ It works by reading a subreddit, looking for specific tokens that denote that a 
 
 ## Usage
 
-Firstly, make sure you have Python and PRAW installed. Then create the file `config.json` and fill in the appropriate fields useing `config.json.example` as a template. Finally, run the `runbot.sh` script (or run `__main__.py` directly).
+1. Make sure you have Python and PRAW installed.
+2. Create the file `config.json` and fill in the appropriate fields using `config.json.example` as a template.
+3. Run the `runbot.sh` script (or run `__main__.py` directly). Windows users run winrun.bat
 
 Make sure whatever account you're using to run the bot is a moderator of your subreddit and has permission to edit flair and the wiki.
 
