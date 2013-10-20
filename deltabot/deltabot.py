@@ -552,7 +552,7 @@ class DeltaBot(object):
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
             # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
-            add_link = "\n\n* [%s](%s) (1)\n\n    1. [Awarded by %s](%s) on %s/%s/%s" % (submission_title, 
+            add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by %s](%s) on %s/%s/%s" % (submission_title, 
                                                                                          submission_url, 
                                                                                          awarder_name, 
                                                                                          comment_url + "?context=2", 

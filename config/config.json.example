@@ -15,7 +15,7 @@
         "append_to_all_messages": "\n\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)][[Subreddit](http://www.reddit.com/r/DeltaBot/)]",
 
         "confirmation": [
-            "Confirmed: 1 delta awarded to /u/%s. ([History](/r/%s/wiki/%s))"
+            "Confirmed: 1 delta awarded to /u/%s. ^[[History](/r/%s/wiki/%s)]"
         ],
         "already_awarded": [
             "You have already awarded /u/%s a delta in this comment tree."
@@ -41,7 +41,7 @@
 
     "scoreboard": {
         "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | :------: |",
-        "table_leader_entry": "\n| **1** | **/u/%s** | [**%s**](/r/%s/wiki/%s) |",
-        "table_entry": "\n| %s | /u/%s | [%s](/r/%s/wiki/%s) |"
+        "table_leader_entry": "\n| **1** | **/u/%s** | [**%s**](/r/%s/wiki/%s "Click to see delta history.") |",
+        "table_entry": "\n| %s | /u/%s | [%s](/r/%s/wiki/%s "Click to see delta history.") |"
     }
 }
