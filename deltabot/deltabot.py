@@ -488,16 +488,16 @@ class DeltaBot(object):
         submission_url = comment.submission.permalink
         submission_title = comment.submission.title
         parent = self.reddit.get_info(thing_id=comment.parent_id)
-        parent_author = parent.author.name.lower()
-        awarder_name = comment.author.name.lower()
+        parent_author = parent.author.name
+        awarder_name = comment.author.name
         today = datetime.date.today()
         
         # try to get wiki page for user, throws exception if page doesn't exist
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
-                                                    parent_author)
+                                                    "users/" + parent_author)
 
-            # get old wiki page content as markdown string, and unescaped an previously escaped HTML characters
+            # get old wiki page content as markdown string, and unescaped any previously escaped HTML characters
             old_content = HTMLParser().unescape(user_wiki_page.content_md)
             
             # compile regex to search for current link formatting
@@ -563,7 +563,7 @@ class DeltaBot(object):
             
             # write new content to wiki page
             self.reddit.edit_wiki_page(self.config.subreddit,
-                                       parent_author,
+                                       "users/" + parent_author,
                                        full_update,
                                        "Created user's delta links page.")
             
