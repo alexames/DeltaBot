@@ -139,7 +139,8 @@ class DeltaBot(object):
         self.minimum_comment_length = longest + self.config.minimum_comment_length
 
     def send_first_time_message(self, recipient_name):
-        self.reddit.send_message(recipient_name, "Congratulations on your first delta!", self.config.private_message)
+        first_time_message = self.config.private_message % (self.config.subreddit, recipient_name)
+        self.reddit.send_message(recipient_name, "Congratulations on your first delta!", first_time_message)
 
     def get_message(self, message_key):
         """ Given a type of message select one of the messages from the
