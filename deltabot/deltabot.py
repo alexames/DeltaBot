@@ -481,6 +481,7 @@ class DeltaBot(object):
 
 
     def update_wiki_tracker(self, comment):
+        logging.info("Updating wiki")
         """ Update wiki page of person earning the delta
         
             Note: comment passed in is the comment awarding the delta, parent comment is the one earning the delta
@@ -490,6 +491,15 @@ class DeltaBot(object):
         submission_title = comment.submission.title
         parent = self.reddit.get_info(thing_id=comment.parent_id)
         parent_author = parent.author.name
+        author_flair = str(self.subreddit.get_flair(parent_author))
+        author_flair = re.search("(flair_text': u')(\d*)", author_flair)
+        flair_count = "0 deltas"
+        if author_flair:
+            flair_count = author_flair.group(2)
+            if flair_count == "1":
+                flair_count = "1 delta"
+            else:
+                flair_count = flair_count + " deltas"
         awarder_name = comment.author.name
         today = datetime.date.today()
         
@@ -500,7 +510,12 @@ class DeltaBot(object):
 
             # get old wiki page content as markdown string, and unescaped any previously escaped HTML characters
             old_content = HTMLParser().unescape(user_wiki_page.content_md)
-            
+
+            # Alter how many deltas is in the first line
+            try:
+                old_content = re.sub("([0-9]+) delta[s]?", flair_count, old_content)
+            except:
+                print "The 'has received' line in the wiki has failed to update."
             # compile regex to search for current link formatting
             # only matches links that are correctly formatted, so will not be broken by malformed or links made by previous versions of DeltaBot
             regex = re.compile("\\* \\[%s\\]\\(%s\\) \\(\d+\\)" % (re.escape(submission_title), re.escape(submission_url)))
@@ -548,7 +563,7 @@ class DeltaBot(object):
         except:
             
             # create header for new wiki page
-            initial_text = "/u/%s has received deltas for the following comments:" % parent_author
+            initial_text = "/u/%s has received 1 delta for the following comments:" % parent_author
             
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
