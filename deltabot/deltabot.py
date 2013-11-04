@@ -496,7 +496,7 @@ class DeltaBot(object):
         # try to get wiki page for user, throws exception if page doesn't exist
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
-                                                    "users/" + parent_author)
+                                                    "user/" + parent_author)
 
             # get old wiki page content as markdown string, and unescaped any previously escaped HTML characters
             old_content = HTMLParser().unescape(user_wiki_page.content_md)
@@ -564,7 +564,7 @@ class DeltaBot(object):
             
             # write new content to wiki page
             self.reddit.edit_wiki_page(self.config.subreddit,
-                                       "users/" + parent_author,
+                                       "user/" + parent_author,
                                        full_update,
                                        "Created user's delta links page.")
             
