@@ -15,7 +15,7 @@
         "append_to_all_messages": "\n\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)][[Subreddit](http://www.reddit.com/r/DeltaBot/)]",
 
         "confirmation": [
-            "Confirmed: 1 delta awarded to /u/%s. ^[[History](/r/%s/wiki/user/%s)]"
+            "Confirmed: 1 delta awarded to /u/%s ^[[History](/r/%s/wiki/user/%s)]"
         ],
         "already_awarded": [
             "You have already awarded /u/%s a delta in this comment tree."
@@ -24,7 +24,7 @@
             "This delta is currently disallowed as your comment contains either no or little text (comment rule 4). Please include an explanation for how /u/%s changed your view. If you edit this in, replying to my comment will make me rescan yours."
         ],
         "broken_rule": [
-            "You cannot award OP a delta as the moderators feel that allowing so would send the wrong message."
+            "You cannot award OP a delta as the moderators feel that allowing so would send the wrong message. If you were trying show the OP how to award a delta, please do so without using the delta symbol unless it's included in a reddit quote."
         ]
     },
 
