@@ -15,7 +15,7 @@
         "append_to_all_messages": "\n\n^[[Wiki](http://www.reddit.com/r/changemyview/wiki/deltabot)][[Code](https://github.com/alexames/DeltaBot)][[Subreddit](http://www.reddit.com/r/DeltaBot/)]",
 
         "confirmation": [
-            "Confirmed: 1 delta awarded to /u/%s ^[[History](/r/%s/wiki/user/%s)]"
+            "Confirmed: 1 delta awarded to /u/%s. ^[[History](/r/%s/wiki/user/%s)]"
         ],
         "already_awarded": [
             "You have already awarded /u/%s a delta in this comment tree."
