@@ -346,6 +346,8 @@ class DeltaBot(object):
                                                       message.author))
         if self.is_moderator(message.author.name):
             command = message.subject.lower()
+            if command == "force add":
+                self.reddit.send_message("/r/" + self.config.subreddit, "Force Add Detected", "The Force Add command has been used on the following link(s):\n\n" + message.body)
             if command == "add" or command == "force add":
                 strict = (command != "force add")
                 self.command_add(message.body, strict)
@@ -363,6 +365,7 @@ class DeltaBot(object):
             elif command == "stop":
                 self.reddit.send_message("/r/" + self.config.subreddit, "Stop Message Confirmed", "NOTICE: The stop message has been issued and I have stopped running.")
                 logging.warning("The stop command has been issued. If this was not sent by you, please check as to why before restarting.")
+                message.mark_as_read()
                 os._exit(1)
 
 
