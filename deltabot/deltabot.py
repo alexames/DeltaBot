@@ -25,6 +25,7 @@
 
 
 import re
+import os
 import sys
 import time
 import praw
@@ -360,7 +361,9 @@ class DeltaBot(object):
                 self.before.clear()
 
             elif command == "stop":
-                self.running = False
+                self.reddit.send_message("/r/" + self.config.subreddit, "Stop Message Confirmed", "NOTICE: The stop message has been issued and I have stopped running.")
+                logging.warning("The stop command has been issued. If this was not sent by you, please check as to why before restarting.")
+                os._exit(1)
 
 
     def rescan_comment(self, bots_comment):
