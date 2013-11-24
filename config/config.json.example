@@ -21,7 +21,7 @@
             "You have already awarded /u/%s a delta in this comment tree."
         ],
         "too_little_text": [
-            "This delta is currently disallowed as your comment contains either no or little text (comment rule 4). Please include an explanation for how /u/%s changed your view. If you edit this in, replying to my comment will make me rescan yours."
+            "This delta is currently disallowed as your comment contains either no or little text ([comment rule 4](http://www.reddit.com/r/changemyview/wiki/rules#wiki_rule_4)). Please include an explanation for how /u/%s changed your view. If you edit this in, replying to my comment will make me rescan yours."
         ],
         "broken_rule": [
             "You cannot award OP a delta as the moderators feel that allowing so would send the wrong message. If you were trying show the OP how to award a delta, please do so without using the delta symbol unless it's included in a reddit quote."
