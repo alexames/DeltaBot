@@ -259,7 +259,7 @@ class DeltaBot(object):
         awardee = parent.author
         while not comment.is_root:
             comment = self.reddit.get_info(thing_id=comment.parent_id)
-            parent = self.reddit.get_info(thing_id=comment.parent_id)
+            parent = self.reddit.get_info(thing_id=parent.parent_id)
 
             if (comment.author == awarder
                 and parent.author == awardee
