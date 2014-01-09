@@ -65,11 +65,18 @@ def str_contains_token(text, tokens):
     """ Returns true if a given string contains one of the given tokens, as long
     as the token is not inside a quote or code block """
     lines = text.split('\n')
+    in_quote=False;
     for line in lines:
+        if(line==''):
+            in_quote=False
+        if in_quote:
+            continue
         if not skippable_line(line):
             for token in tokens:
                 if token in line:
                     return True
+        else:
+            in_quote=True
     return False
 
 
