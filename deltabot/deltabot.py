@@ -65,10 +65,10 @@ def str_contains_token(text, tokens):
     """ Returns true if a given string contains one of the given tokens, as long
     as the token is not inside a quote or code block """
     lines = text.split('\n')
-    in_quote=False;
+    in_quote = False
     for line in lines:
-        if(line==''):
-            in_quote=False
+        if not line: # Empty string
+            in_quote = False
         if in_quote:
             continue
         if not skippable_line(line):
@@ -76,7 +76,7 @@ def str_contains_token(text, tokens):
                 if token in line:
                     return True
         else:
-            in_quote=True
+            in_quote = True
     return False
 
 
@@ -109,7 +109,7 @@ def markdown_to_scoreboard(text):
             tokens = line.split()
             username = tokens[1]
             score = int(tokens[2])
-            current_user = scoreboard[username] = { "links": [], "score": score }
+            current_user = scoreboard[username] = {"links": [], "score": score}
         elif line:
             current_user["links"].append(line[2:])
     return scoreboard
@@ -144,11 +144,15 @@ class DeltaBot(object):
         for token in self.config.tokens:
             if len(token) > longest:
                 longest = len(token)
-        self.minimum_comment_length = longest + self.config.minimum_comment_length
+        self.minimum_comment_length = longest + \
+                                      self.config.minimum_comment_length
 
     def send_first_time_message(self, recipient_name):
-        first_time_message = self.config.private_message % (self.config.subreddit, recipient_name)
-        self.reddit.send_message(recipient_name, "Congratulations on your first delta!", first_time_message)
+        first_time_message = self.config.private_message % (
+                                 self.config.subreddit, recipient_name)
+        self.reddit.send_message(recipient_name,
+                                 "Congratulations on your first delta!",
+                                 first_time_message)
 
     def get_message(self, message_key):
         """ Given a type of message select one of the messages from the
@@ -194,7 +198,7 @@ class DeltaBot(object):
         if redditor in scoreboard:
             entry = scoreboard[redditor]
         else:
-            entry = scoreboard[redditor] = { "links": [], "score": 0 }
+            entry = scoreboard[redditor] = {"links": [], "score": 0}
 
         entry["links"].append("[%s](%s)" % (comment.submission.title,
                                             comment.permalink))
@@ -227,8 +231,8 @@ class DeltaBot(object):
             css_class += ' ' + self.config.flair['css_class']
 
         self.subreddit.set_flair(redditor,
-            self.config.flair['point_text'] % points,
-            css_class)
+                                 self.config.flair['point_text'] % points,
+                                 css_class)
 
 
     def is_comment_too_short(self, comment):
@@ -354,7 +358,10 @@ class DeltaBot(object):
         if self.is_moderator(message.author.name):
             command = message.subject.lower()
             if command == "force add":
-                self.reddit.send_message("/r/" + self.config.subreddit, "Force Add Detected", "The Force Add command has been used on the following link(s):\n\n" + message.body)
+                self.reddit.send_message("/r/" + self.config.subreddit,
+                                         "Force Add Detected",
+                                         "The Force Add command has been used "                                          "on the following link(s):\n\n" + \
+                                         message.body)
             if command == "add" or command == "force add":
                 strict = (command != "force add")
                 self.command_add(message.body, strict)
@@ -370,8 +377,11 @@ class DeltaBot(object):
                 self.before.clear()
 
             elif command == "stop":
-                self.reddit.send_message("/r/" + self.config.subreddit, "Stop Message Confirmed", "NOTICE: The stop message has been issued and I have stopped running.")
-                logging.warning("The stop command has been issued. If this was not sent by you, please check as to why before restarting.")
+                self.reddit.send_message("/r/" + self.config.subreddit,
+                                         "Stop Message Confirmed",
+                                         "NOTICE: The stop message has been "
+                                         "issued and I have stopped running.")
+                logging.warning("The stop command has been issued. If this was "                                "not sent by you, please check as to why before"                                " restarting.")
                 message.mark_as_read()
                 os._exit(1)
 
@@ -387,8 +397,9 @@ class DeltaBot(object):
                 and not self.is_parent_commenter_author(orig_comment)
                 and not self.points_already_awarded_to_ancestor(orig_comment)):
             self.award_points(awardee, orig_comment)
-            message = self.get_message('confirmation') % (awardee,
-                    self.config.subreddit, awardee)
+            message = self.get_message('confirmation') % (
+                          awardee, self.config.subreddit, awardee
+                          )
             bots_comment.edit(message).distinguish()
 
 
@@ -442,13 +453,17 @@ class DeltaBot(object):
         score_table = [
             "\n\n# Top Ten Viewchangers (%s)" % calendar.month_name[now.month],
             self.config.scoreboard['table_head'],
-            self.config.scoreboard['table_leader_entry'] % (top_scores[0]['user'],
-            top_scores[0]['flair_text'], self.config.subreddit, top_scores[0]['user'])
+            self.config.scoreboard['table_leader_entry'] % (
+                top_scores[0]['user'], top_scores[0]['flair_text'],
+                self.config.subreddit, top_scores[0]['user']
+            )
         ]
 
         for i in range(1, 10):
-            table_entry = self.config.scoreboard['table_entry'] % (i+1, top_scores[i]['user'],
-                 top_scores[i]['flair_text'], self.config.subreddit, top_scores[i]['user'])
+            table_entry = self.config.scoreboard['table_entry'] % (
+                i+1, top_scores[i]['user'], top_scores[i]['flair_text'],
+                self.config.subreddit, top_scores[i]['user']
+                )
             score_table.append(table_entry)
 
         settings = self.subreddit.get_settings()
@@ -497,7 +512,8 @@ class DeltaBot(object):
         logging.info("Updating wiki")
         """ Update wiki page of person earning the delta
         
-            Note: comment passed in is the comment awarding the delta, parent comment is the one earning the delta
+            Note: comment passed in is the comment awarding the delta,
+            parent comment is the one earning the delta
         """
         comment_url = comment.permalink
         submission_url = comment.submission.permalink
@@ -519,20 +535,24 @@ class DeltaBot(object):
         # try to get wiki page for user, throws exception if page doesn't exist
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
-                                                    "user/" + parent_author)
+                                                       "user/" + parent_author)
 
-            # get old wiki page content as markdown string, and unescaped any previously escaped HTML characters
+            # get old wiki page content as markdown string, and unescaped any
+            # previously escaped HTML characters
             old_content = HTMLParser().unescape(user_wiki_page.content_md)
 
             # Alter how many deltas is in the first line
             try:
-                old_content = re.sub("([0-9]+) delta[s]?", flair_count, old_content)
+                old_content = re.sub("([0-9]+) delta[s]?", flair_count,
+                                     old_content)
             except:
                 print "The 'has received' line in the wiki has failed to update."
             # compile regex to search for current link formatting
-            # only matches links that are correctly formatted, so will not be broken by malformed or links made by previous versions of DeltaBot
-            regex = re.compile("\\* \\[%s\\]\\(%s\\) \\(\d+\\)" % (re.escape(submission_title), re.escape(submission_url)))
-            
+            # only matches links that are correctly formatted, so will not be
+            # broken by malformed or links made by previous versions of DeltaBot
+            regex = re.compile("\\* \\[%s\\]\\(%s\\) \\(\d+\\)" % (
+                re.escape(submission_title), re.escape(submission_url)
+                ))
             # search old page content for link
             old_link = regex.search(old_content)
             
@@ -542,12 +562,17 @@ class DeltaBot(object):
             # old link exists, only increase number of deltas for post
             if old_link:
                 # use re.sub to increment number of deltas in link
-                new_link = re.sub("\((\d+)\)", lambda match: "(" + str(int(match.group(1)) + 1) + ")", old_link.group(0))
+                new_link = re.sub(
+                    "\((\d+)\)",
+                    lambda match: "(" + str(int(match.group(1)) + 1) + ")",
+                                  old_link.group(0)
+                    )
                 
                 # insert link to new delta
-                new_link += "\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (awarder_name, 
-                                                                            comment_url + "?context=2", 
-                                                                            today.month, today.day, today.year)
+                new_link += "\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (
+                    awarder_name, comment_url + "?context=2", 
+                    today.month, today.day, today.year
+                    )
                 
                 #use re.sub to replace old link with new link
                 new_content = re.sub(regex, new_link, old_content)
@@ -555,13 +580,17 @@ class DeltaBot(object):
             # no old link, create old link with initial count of 1
             else:
                 # create link and format as markdown list item
-                # "?context=2" means link shows comment earning the delta and the comment awarding it
-                # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
+                # "?context=2" means link shows comment earning the delta and
+                # the comment awarding it
+                # "(1)" is the number of deltas earned from that comment
+                # (1 because this is the first delta the user has earned)
                 add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title, 
-                                                                                             submission_url, 
-                                                                                             awarder_name, 
-                                                                                             comment_url + "?context=2", 
-                                                                                             today.month, today.day, today.year)
+              submission_url, 
+              awarder_name, 
+              comment_url + "?context=2", 
+              today.month,
+              today.day,
+              today.year)
                  
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
@@ -582,10 +611,10 @@ class DeltaBot(object):
             # "?context=2" means link shows comment earning the delta and the comment awarding it
             # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
             add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title, 
-                                                                                         submission_url, 
-                                                                                         awarder_name, 
-                                                                                         comment_url + "?context=2", 
-                                                                                         today.month, today.day, today.year)
+          submission_url, 
+          awarder_name, 
+          comment_url + "?context=2", 
+          today.month, today.day, today.year)
             
             # combine header and link
             full_update = initial_text + add_link
