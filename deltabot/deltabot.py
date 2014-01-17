@@ -126,18 +126,25 @@ def scoreboard_to_markdown(scoreboard):
 
 
 class DeltaBot(object):
-    def __init__(self, config):
-        logging.info('connecting to reddit')
+    def __init__(self, config, test=False, test_reddit=None, test_before=None):
         self.config = config
-        self.reddit = praw.Reddit(self.config.subreddit + ' bot',
-                                  site_name=config.site_name)
+
+        if test:
+            self.reddit = test_reddit
+            before_id = test_before
+        else:
+            logging.info('connecting to reddit')
+            self.reddit = praw.Reddit(self.config.subreddit + ' bot',
+                                      site_name=config.site_name)
+            before_id = read_saved_id(self.config.last_comment_filename)
+
         self.reddit.login(*[self.config.account['username'],
                           self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.before = collections.deque([], 10)
-        before_id = read_saved_id(self.config.last_comment_filename)
+
         if before_id:
             self.before.append(before_id)
         self.changes_made = False
@@ -252,7 +259,7 @@ class DeltaBot(object):
                     return True
                 else:
                     reply.delete()
-                    return False                 
+                    return False
         return False
 
 
@@ -515,7 +522,7 @@ class DeltaBot(object):
     def update_wiki_tracker(self, comment):
         logging.info("Updating wiki")
         """ Update wiki page of person earning the delta
-        
+
             Note: comment passed in is the comment awarding the delta,
             parent comment is the one earning the delta
         """
@@ -535,7 +542,7 @@ class DeltaBot(object):
                 flair_count = flair_count + " deltas"
         awarder_name = comment.author.name
         today = datetime.date.today()
-        
+
         # try to get wiki page for user, throws exception if page doesn't exist
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
@@ -559,10 +566,10 @@ class DeltaBot(object):
                 ))
             # search old page content for link
             old_link = regex.search(old_content)
-            
+
             # variable for updated wiki content
             new_content = ""
-            
+
             # old link exists, only increase number of deltas for post
             if old_link:
                 # use re.sub to increment number of deltas in link
@@ -571,16 +578,16 @@ class DeltaBot(object):
                     lambda match: "(" + str(int(match.group(1)) + 1) + ")",
                                   old_link.group(0)
                     )
-                
+
                 # insert link to new delta
                 new_link += "\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (
-                    awarder_name, comment_url + "?context=2", 
+                    awarder_name, comment_url + "?context=2",
                     today.month, today.day, today.year
                     )
-                
+
                 #use re.sub to replace old link with new link
                 new_content = re.sub(regex, new_link, old_content)
-                
+
             # no old link, create old link with initial count of 1
             else:
                 # create link and format as markdown list item
@@ -588,67 +595,67 @@ class DeltaBot(object):
                 # the comment awarding it
                 # "(1)" is the number of deltas earned from that comment
                 # (1 because this is the first delta the user has earned)
-                add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title, 
-              submission_url, 
-              awarder_name, 
-              comment_url + "?context=2", 
+                add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title,
+              submission_url,
+              awarder_name,
+              comment_url + "?context=2",
               today.month,
               today.day,
               today.year)
-                 
+
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
-                
+
             # overwrite old content with new content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        user_wiki_page.page,
                                        new_content,
                                        "Updated delta links.")
-                
+
         # if page doesn't exist, create page with initial content
         except:
-            
+
             # create header for new wiki page
             initial_text = "/u/%s has received 1 delta for the following comments:" % parent_author
-            
+
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
-            # "(1)" is the number of deltas earned from that comment 
+            # "(1)" is the number of deltas earned from that comment
             # (1 because this is the first delta the user has earned)
-            add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title, 
-          submission_url, 
-          awarder_name, 
-          comment_url + "?context=2", 
+            add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title,
+          submission_url,
+          awarder_name,
+          comment_url + "?context=2",
           today.month, today.day, today.year)
-            
+
             # combine header and link
             full_update = initial_text + add_link
-            
+
             # write new content to wiki page
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        "user/" + parent_author,
                                        full_update,
                                        "Created user's delta links page.")
-            
+
             """Add new awardee to Delta Tracker wiki page"""
-            
+
             # get delta tracker wiki page
             delta_tracker_page = self.reddit.get_wiki_page(
                                                           self.config.subreddit,
                                                           "delta_tracker")
-            
+
             # retrieve delta tracker page content as markdown string
             delta_tracker_page_body = delta_tracker_page.content_md
-            
+
             # create link to user's wiki page as markdown list item
             new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (
                                                           parent_author,
                                                           self.config.subreddit,
                                                           parent_author)
-            
+
             # append new link to old content
             new_content = delta_tracker_page_body + new_link
-            
+
             # overwrite old page content with new page content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        "delta_tracker",
