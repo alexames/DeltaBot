@@ -134,7 +134,8 @@ class DeltaBot(object):
         self.reddit.login(*[self.config.account['username'],
                           self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
-        self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
+        self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
+                                self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.before = collections.deque([], 10)
         before_id = read_saved_id(self.config.last_comment_filename)
         if before_id:
@@ -360,7 +361,8 @@ class DeltaBot(object):
             if command == "force add":
                 self.reddit.send_message("/r/" + self.config.subreddit,
                                          "Force Add Detected",
-                                         "The Force Add command has been used "                                          "on the following link(s):\n\n" + \
+                                         "The Force Add command has been used "
+                                         "on the following link(s):\n\n" + \
                                          message.body)
             if command == "add" or command == "force add":
                 strict = (command != "force add")
@@ -381,7 +383,9 @@ class DeltaBot(object):
                                          "Stop Message Confirmed",
                                          "NOTICE: The stop message has been "
                                          "issued and I have stopped running.")
-                logging.warning("The stop command has been issued. If this was "                                "not sent by you, please check as to why before"                                " restarting.")
+                logging.warning("The stop command has been issued. If this was "
+                                "not sent by you, please check as to why before"
+                                " restarting.")
                 message.mark_as_read()
                 os._exit(1)
 
@@ -609,7 +613,8 @@ class DeltaBot(object):
             
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
-            # "(1)" is the number of deltas earned from that comment (1 because this is the first delta the user has earned)
+            # "(1)" is the number of deltas earned from that comment 
+            # (1 because this is the first delta the user has earned)
             add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title, 
           submission_url, 
           awarder_name, 
