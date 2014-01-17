@@ -148,8 +148,8 @@ class DeltaBot(object):
                                       self.config.minimum_comment_length
 
     def send_first_time_message(self, recipient_name):
-        first_time_message = self.config.private_message %
-                             (self.config.subreddit, recipient_name)
+        first_time_message = self.config.private_message % (
+                                 self.config.subreddit, recipient_name)
         self.reddit.send_message(recipient_name,
                                  "Congratulations on your first delta!",
                                  first_time_message)
@@ -397,8 +397,9 @@ class DeltaBot(object):
                 and not self.is_parent_commenter_author(orig_comment)
                 and not self.points_already_awarded_to_ancestor(orig_comment)):
             self.award_points(awardee, orig_comment)
-            message = self.get_message('confirmation') %
-                      (awardee, self.config.subreddit, awardee)
+            message = self.get_message('confirmation') % (
+                          awardee, self.config.subreddit, awardee
+                          )
             bots_comment.edit(message).distinguish()
 
 
