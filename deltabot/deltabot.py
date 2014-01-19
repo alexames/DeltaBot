@@ -247,17 +247,23 @@ class DeltaBot(object):
         return len(comment.body) < self.minimum_comment_length
 
 
-    def already_replied(self, comment):
+    def already_replied(self, comment, test=False):
         """ Returns true if Deltabot has replied to this comment """
-        comment = self.reddit.get_submission(comment.permalink).comments[0]
+        replies = comment.replies
+
+        # Needed in order to refresh comments
+        if not test:
+            replies = self.reddit.get_submission(comment.permalink).comments[0].replies
+
         message = self.get_message('confirmation')
-        for reply in comment.replies:
+        for reply in replies:
             author = str(reply.author).lower()
             me = self.config.account['username'].lower()
             if author == me:
                 if str(message)[0:15] in str(reply):
                     return True
                 else:
+                    #FIXME: Side Effect!!!
                     reply.delete()
                     return False
         return False
@@ -270,14 +276,13 @@ class DeltaBot(object):
         return comment_author == post_author
 
 
-    def points_already_awarded_to_ancestor(self, comment):
+    def points_already_awarded_to_ancestor(self, comment, parent):
         """ Returns true if a point was awarded by the comment's author already
         in this branch of the comment tree """
-        parent = self.reddit.get_info(thing_id=comment.parent_id)
         awarder = comment.author
         awardee = parent.author
         while not comment.is_root:
-            comment = self.reddit.get_info(thing_id=comment.parent_id)
+            comment = parent
             parent = self.reddit.get_info(thing_id=parent.parent_id)
 
             if (comment.author == awarder
@@ -315,7 +320,7 @@ class DeltaBot(object):
                 log = "No points awarded, parent is OP"
                 message = self.get_message('broken_rule')
 
-            elif strict and check_points_already_awarded_to_ancestor(comment):
+            elif strict and check_points_already_awarded_to_ancestor(comment, parent):
                 log = "No points awarded, already awarded"
                 message = self.get_message('already_awarded') % parent.author
 

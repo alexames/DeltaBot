@@ -36,22 +36,16 @@ from praw_mocks import *
 testConfig   = config.Config(os.getcwd() + '/config/config.json')
 logging.getLogger('requests').setLevel(logging.WARNING)
 
-def reddit_id(length=6):
-    """Emulate a reddit id with a random string of letters and digits"""
-    return ''.join(random.choice(string.ascii_lowercase +
-                   string.digits) for x in range(length))
-
-
-
 def test_suite():
     cases = [TestScanComment]
     alltests = [unittest.TestLoader().loadTestsFromTestCase(case) for case in cases]
     return unittest.TestSuite(alltests)
 
-class TestScanComment(unittest.TestCase):
+class DeltaBotTestCase(unittest.TestCase):
     def setUp(self):
         self.bot = deltabot.DeltaBot(testConfig, test=True, test_reddit=Reddit())
 
+class TestScanComment(DeltaBotTestCase):
     def test_correctly_awards_delta(self):
         """2 - If a comment contains a Delta Symbol, DeltaBot should award 1 point to the author of the comment's parent"""
 
@@ -63,7 +57,7 @@ class TestScanComment(unittest.TestCase):
         log, message, awardee = self.bot.scan_comment(comment, parent,
                                                   check_already_replied=lambda c: False,
                                                   check_is_parent_commenter_author=lambda c, p: False,
-                                                  check_points_already_awarded_to_ancestor=lambda c: False,
+                                                  check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
 
         testMessages = [(m + testConfig.messages['append_to_all_messages'])  % (parent.author,
@@ -81,7 +75,7 @@ class TestScanComment(unittest.TestCase):
         log, message, awardee = self.bot.scan_comment(comment, parent,
                                                   check_already_replied=lambda c: False,
                                                   check_is_parent_commenter_author=lambda c, p: False,
-                                                  check_points_already_awarded_to_ancestor=lambda c: False,
+                                                  check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
 
         testMessages = [(m + testConfig.messages['append_to_all_messages'])  % (parent.author,
@@ -102,7 +96,7 @@ class TestScanComment(unittest.TestCase):
         log, message, awardee = self.bot.scan_comment(comment, parent,
                                                   check_already_replied=lambda c: False,
                                                   check_is_parent_commenter_author=lambda c, p: True,
-                                                  check_points_already_awarded_to_ancestor=lambda c: False,
+                                                  check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
 
         testMessages = [m + testConfig.messages['append_to_all_messages'] for m in testConfig.messages['broken_rule']]
@@ -118,8 +112,8 @@ class TestScanComment(unittest.TestCase):
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
                                                   check_already_replied=lambda c: False,
-                                                  check_is_parent_commenter_author=lambda c: False,
-                                                  check_points_already_awarded_to_ancestor=lambda c: False,
+                                                  check_is_parent_commenter_author=lambda c, p: False,
+                                                  check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
         self.assertEqual(log,"No points awarded, replying to DeltaBot", "Did not properly recognize a reply to DeltaBot")
         self.assertIsNone(message, "Did not properly recognize a reply to DeltaBot, message: %s" % message)
@@ -133,8 +127,8 @@ class TestScanComment(unittest.TestCase):
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
                                                   check_already_replied=lambda c: True,
-                                                  check_is_parent_commenter_author=lambda c: False,
-                                                  check_points_already_awarded_to_ancestor=lambda c: False,
+                                                  check_is_parent_commenter_author=lambda c, p: False,
+                                                  check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
 
         self.assertEqual(log,"No points awarded, already replied", "Did not properly recognize an already replied: %s" % log)
@@ -153,7 +147,7 @@ class TestScanComment(unittest.TestCase):
         log, message, awardee = self.bot.scan_comment(comment, parent,
                                                   check_already_replied=lambda c: False,
                                                   check_is_parent_commenter_author=lambda c, p: False,
-                                                  check_points_already_awarded_to_ancestor=lambda c:True,
+                                                  check_points_already_awarded_to_ancestor=lambda c, p:True,
                                                   strict=True)
 
         testMessages = [(m + testConfig.messages['append_to_all_messages'])  % parent.author for m in testConfig.messages['already_awarded']]
@@ -172,7 +166,7 @@ class TestScanComment(unittest.TestCase):
         log, message, awardee = self.bot.scan_comment(comment, parent,
                                                   check_already_replied=lambda c: False,
                                                   check_is_parent_commenter_author=lambda c, p: False,
-                                                  check_points_already_awarded_to_ancestor=lambda c: False,
+                                                  check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
 
         testMessages = [(m + testConfig.messages['append_to_all_messages'])  % parent.author for m in testConfig.messages['too_little_text']]
@@ -181,19 +175,75 @@ class TestScanComment(unittest.TestCase):
         self.assertIn(message, testMessages, "Did not properly recognize a short comment, sent wrong message: %s" % message)
         self.assertIsNone(awardee, "Did not properly recognize a short comment, awardee: %s" % awardee)
 
-    def test_is_comment_too_short(self):
-        """2.4 - The comment is shorter than [length]"""
+class TestAlreadyReplied(DeltaBotTestCase):
+    def test_no_replies(self):
+        comment = Comment(replies=[])
 
+        result = self.bot.already_replied(comment, test=True)
+        self.assertFalse(result, "already_replied returns True with no replies")
+
+    @unittest.skip("Need to clear up side effect in already_replied()")
+    def test_one_bot_reply(self):
+        replies = [Comment(author=Author(name=testConfig.account['username']))]
+        comment = Comment(replies=replies)
+
+        result = self.bot.already_replied(comment, test=True)
+        self.assertTrue(result, "already_replied returns False when DeltaBot is only reply")
+
+    @unittest.skip("Need to clear up side effect in already_replied()")
+    def test_with_many_replies(self):
+        replies = [Comment(author=Author(name="PersonNumber"+str(x))) for x in range(10)]
+        replies.append(Comment(author=Author(name=testConfig.account['username'])))
+
+        comment = Comment(replies=replies)
+        result = self.bot.already_replied(comment, test=True)
+        self.assertTrue(result, "already_replied returns False when DeltaBot is one of many replies")
+
+class TestIsParentCommenterAuthor(DeltaBotTestCase):
+    def test_with_OP_parent(self):
+        comment = Comment()
+        comment.submission = Submission(author=Author(name="Someone"))
+        parent = Comment(author=Author(name="Someone"))
+
+        result = self.bot.is_parent_commenter_author(comment, parent)
+        self.assertTrue(result, "is_parent_commenter_author() could not recognize OP as author")
+
+    def test_with_OP_not_parent(self):
+        comment = Comment()
+        comment.submission = Submission(author=Author(name="Someone"))
+        parent = Comment(author=Author(name="SomeoneElse"))
+
+        result = self.bot.is_parent_commenter_author(comment, parent)
+        self.assertFalse(result, "is_parent_commenter_author() incorrectly recognized OP as author")
+
+class TestAncestorPoints(DeltaBotTestCase):
+    # Need a more complicated mock in order to test this
+    def test_with_root_comment(self):
+        pass
+
+class TestIsCommentTooShort(DeltaBotTestCase):
+    def test_no_comment(self):
         no_comment = Comment(body="")
+        result = self.bot.is_comment_too_short(no_comment)
+        self.assertTrue(result, "is_comment_too_short() returns False with empty comment")
+
+    def test_short_comment(self):
         short_comment = Comment(body="a"*(self.bot.minimum_comment_length-1))
+        result = self.bot.is_comment_too_short(short_comment)
+        self.assertTrue(result, "is_comment_too_short() returns False with short comment")
+
+    def test_good_comment(self):
         good_comment = Comment(body="a"*self.bot.minimum_comment_length)
+        result = self.bot.is_comment_too_short(good_comment)
+        self.assertFalse(result, "is_comment_too_short() returns True with good comment")
+
+    def test_long_comment(self):
         long_comment = Comment(body="a"*(self.bot.minimum_comment_length*10))
-
-        self.assertTrue(self.bot.is_comment_too_short(no_comment), "is_comment_too_short() returns False with empty comment")
-        self.assertTrue(self.bot.is_comment_too_short(short_comment), "is_comment_too_short() returns False with short comment")
-        self.assertFalse(self.bot.is_comment_too_short(good_comment), "is_comment_too_short() returns True with good comment")
-        self.assertFalse(self.bot.is_comment_too_short(long_comment), "is_comment_too_short() returns True with long comment")
-
+        result = self.bot.is_comment_too_short(long_comment)
+        self.assertFalse(result, "is_comment_too_short() returns True with long comment")
 
 if __name__ == '__main__':
     unittest.main()
+
+
+

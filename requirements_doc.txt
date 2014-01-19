@@ -10,10 +10,10 @@ Constraints:
 Features:
 1 - DeltaBot should periodically scan any new comments that have been made in its subreddit.
 2 - If a comment contains a Delta Symbol, DeltaBot should award 1 point to the author of the comment's parent, unless:
-2.1 - The parent is OP, DeltaBot or the awarder.
-2.2 - The commenter has already awarded a delta to this comment.
+2.1 - The parent is OP, DeltaBot or the awarder. WARNING: DeltaBot does not currently deal with self-awarding
+2.2 - The commenter has already awarded a delta to this comment. WARNING: If DeltaBot finds replies it made that are not awarding it will delete them.
 2.3 - The commenter has already awarded a delta to the parent's author at a higher point in the thread (but elsewhere in the comment tree or elsewhere in the submission's comment page are cool)
-2.4 - The comment is shorter than [length]
+2.4 - The comment is shorter than [length] WARNING: Undocumented feature -Rescanning comments that were originally too short
 3 - Awarding a delta to a user consists of:
 3.1 - Adding 1 to the number in the user's flair or giving them a flair of "1" if they have no flair
 3.2 - Checking if they have one of the top 10 scores this month. If so, update the high score chart in the sidebar to show this.
@@ -21,5 +21,9 @@ Features:
 3.4 - If the user does not have a wiki page, create one with the correct number of deltas.
 4 - DeltaBot should periodically scan its inbox to check for commands from mods.
 4.1 - If there is a message from a mod, it scans the message for commands
-4.1.1 - If it receives the command "STOP" it will save the ID of its most recently scanned comment and terminate
-4.1.2 - [If it receives etc. etc. etc.]
+4.1.1 - If it receives the command "force add" it will perform a non-strict scan of the comment ids in the message body
+4.1.2 - If it receives the command "add" it will perform a strict scan of the comment ids in the message body
+4.1.3 - If it receives the command "remove" it will do nothing (TODO, fix this)
+4.1.4 - If it receives the command "rescan" it will rescan the comment ids in the message body
+4.1.5 - If it receives the command "reset" it will clear the before queue (unsure what this means)
+4.1.6 - If it receives the command "stop" it will save the ID of its most recently scanned comment and terminate
