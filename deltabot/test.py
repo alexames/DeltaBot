@@ -31,6 +31,7 @@ import string
 
 import config
 import deltabot
+import praw_mocks
 
 testConfig   = config.Config(os.getcwd() + '/config/config.json')
 logging.getLogger('requests').setLevel(logging.WARNING)
@@ -141,7 +142,7 @@ class TestScanComment(unittest.TestCase):
         """2 - If a comment contains a Delta Symbol, DeltaBot should award 1 point to the author of the comment's parent"""
 
         # Comment must contain a Delta and be long enough
-        comment = self.Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
+        comment = praw_mocks.Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
         parent = self.Comment(author=self.Author(name='Someone'))
 
         log, message, awardee = (None, None, None)
