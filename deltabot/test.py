@@ -31,7 +31,7 @@ import string
 
 import config
 import deltabot
-import praw_mocks
+from praw_mocks import *
 
 testConfig   = config.Config(os.getcwd() + '/config/config.json')
 logging.getLogger('requests').setLevel(logging.WARNING)
@@ -49,101 +49,15 @@ def test_suite():
     return unittest.TestSuite(alltests)
 
 class TestScanComment(unittest.TestCase):
-    # The following classes are meant to emulate various PRAW objects
-    # They do not contain all of the same attributes if the original
-    # PRAW class, but only the necessary ones needed for testing the
-    # process_unread function.
-
-    class Reddit(object):
-        def __init__(self):
-            self._sent_message = False
-            self._message_recipient = ''
-            self._message_subject = ''
-            self._message_text = ''
-            # Allows a custom comment to be assigned that is used to
-            # verify if get_submission is working correctly.
-            self._get_sub_comment = None
-
-        def login(*args, **kwargs):
-            pass
-
-        def get_subreddit(*args, **kwargs):
-            return TestScanComment.Subreddit()
-
-        def send_message(self, recipient, subject, text, **kwargs):
-            self._sent_message = True
-            self._message_recipient = recipient
-            self._message_subject = subject
-            self._message_text = text
-
-        def get_submission(self, *args, **kwargs):
-            s = TestScanComment.Submission()
-            if kwargs.get('submission_id') == self._get_sub_comment.permalink:
-                s.comments.append(self._get_sub_comment)
-            return s
-
-    class Subreddit(object):
-        def __init__(self):
-            pass
-
-
-    class Submission(object):
-        def __init__(self):
-            self.comments = []
-
-    class Repliable(object):
-        def __init__(self, author=None, body='', reddit_session=None, replies=[]):
-            self.author = author or TestScanComment.Author()
-            self.body = body
-            self.replies = replies
-            self.id = reddit_id()
-            self.reddit_session = reddit_session
-            self._replied_to = False
-            self._reply_text = ''
-
-        def reply(self, text):
-            self._replied_to = True
-            self._reply_text = text
-
-    class Author(object):
-        def __init__(self, name=''):
-            self.name = name
-
-        def __eq__(self, other):
-            return self.name == other.name
-
-        def __ne__(self, other):
-            return self.name != other.name
-
-        def __str__(self):
-            return self.name
-
-    class Message(Repliable):
-        def __init__(self, *args,  **kwargs):
-            TestScanComment.Repliable.__init__(self, *args, **kwargs)
-            self.was_comment = False
-
-    class Comment(Repliable):
-        def __init__(self, *args, **kwargs):
-            TestScanComment.Repliable.__init__(self, *args, **kwargs)
-            self.was_comment = True
-            self.permalink = reddit_id() + '/test/' + self.id
-            self._edited = False
-            self._edit_text = ''
-
-        def edit(self, text):
-            self._edited = True
-            self._edit_text = text
-
     def setUp(self):
-        self.bot = deltabot.DeltaBot(testConfig, test=True, test_reddit=self.Reddit())
+        self.bot = deltabot.DeltaBot(testConfig, test=True, test_reddit=Reddit())
 
     def test_correctly_awards_delta(self):
         """2 - If a comment contains a Delta Symbol, DeltaBot should award 1 point to the author of the comment's parent"""
 
         # Comment must contain a Delta and be long enough
-        comment = praw_mocks.Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
-        parent = self.Comment(author=self.Author(name='Someone'))
+        comment = Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
+        parent = Comment(author=Author(name='Someone'))
 
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
@@ -160,8 +74,8 @@ class TestScanComment(unittest.TestCase):
         self.assertEqual(awardee, parent.author.name, "Did not properly award a delta, awardee: %s" % awardee)
 
         # Comment must contain be long enough but NOT contain a delta
-        comment = self.Comment(body="a"*self.bot.minimum_comment_length)
-        parent = self.Comment(author=self.Author(name='Someone'))
+        comment = Comment(body="a"*self.bot.minimum_comment_length)
+        parent = Comment(author=Author(name='Someone'))
 
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
@@ -181,8 +95,8 @@ class TestScanComment(unittest.TestCase):
         """2.1 - The parent is OP, DeltaBot or the awarder."""
 
         #Test with reply to OP
-        comment = self.Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
-        parent = self.Comment(author=self.Author(name='Someone'))
+        comment = Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
+        parent = Comment(author=Author(name='Someone'))
 
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
@@ -198,8 +112,8 @@ class TestScanComment(unittest.TestCase):
         self.assertIsNone(awardee, "Did not properly recognize a reply to OP, awardee: %s" % awardee)
 
         #Test with reply to DeltaBot
-        comment = self.Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
-        parent = self.Comment(author=self.Author(name=testConfig.account['username']))
+        comment = Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
+        parent = Comment(author=Author(name=testConfig.account['username']))
 
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
@@ -213,8 +127,8 @@ class TestScanComment(unittest.TestCase):
 
     def test_already_replied(self):
         """2.2 - The commenter has already awarded a delta to this comment."""
-        comment = self.Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
-        parent = self.Comment(author=self.Author(name='Someone'))
+        comment = Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
+        parent = Comment(author=Author(name='Someone'))
 
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
@@ -232,8 +146,8 @@ class TestScanComment(unittest.TestCase):
         """2.3 - The commenter has already awarded a delta to the parent's author at a higher point in the thread
         (but elsewhere in the comment tree or elsewhere in the submission's comment page are cool)"""
 
-        comment = self.Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
-        parent = self.Comment(author=self.Author(name='Someone'))
+        comment = Comment(body=testConfig.tokens[0] + "a"*self.bot.minimum_comment_length)
+        parent = Comment(author=Author(name='Someone'))
 
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
@@ -251,8 +165,8 @@ class TestScanComment(unittest.TestCase):
     def test_check_comment_length(self):
         """2.4 - The comment is shorter than [length]"""
 
-        comment = self.Comment(body=testConfig.tokens[0] + "a"*(self.bot.minimum_comment_length-2))
-        parent = self.Comment(author=self.Author(name='Someone'))
+        comment = Comment(body=testConfig.tokens[0] + "a"*(self.bot.minimum_comment_length-2))
+        parent = Comment(author=Author(name='Someone'))
 
         log, message, awardee = (None, None, None)
         log, message, awardee = self.bot.scan_comment(comment, parent,
@@ -270,10 +184,10 @@ class TestScanComment(unittest.TestCase):
     def test_is_comment_too_short(self):
         """2.4 - The comment is shorter than [length]"""
 
-        no_comment = self.Comment(body="")
-        short_comment = self.Comment(body="a"*(self.bot.minimum_comment_length-1))
-        good_comment = self.Comment(body="a"*self.bot.minimum_comment_length)
-        long_comment = self.Comment(body="a"*(self.bot.minimum_comment_length*10))
+        no_comment = Comment(body="")
+        short_comment = Comment(body="a"*(self.bot.minimum_comment_length-1))
+        good_comment = Comment(body="a"*self.bot.minimum_comment_length)
+        long_comment = Comment(body="a"*(self.bot.minimum_comment_length*10))
 
         self.assertTrue(self.bot.is_comment_too_short(no_comment), "is_comment_too_short() returns False with empty comment")
         self.assertTrue(self.bot.is_comment_too_short(short_comment), "is_comment_too_short() returns False with short comment")
