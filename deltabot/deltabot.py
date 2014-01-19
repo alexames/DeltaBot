@@ -263,9 +263,9 @@ class DeltaBot(object):
         return False
 
 
-    def is_parent_commenter_author(self, comment):
+    def is_parent_commenter_author(self, comment, parent):
         """ Returns true if the author of the parent comment the submitter """
-        comment_author = self.reddit.get_info(thing_id=comment.parent_id).author
+        comment_author = parent.author
         post_author = comment.submission.author
         return comment_author == post_author
 
@@ -288,41 +288,67 @@ class DeltaBot(object):
         return False
 
 
-    def scan_comment(self, comment, strict=True):
-        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
-                     (self.config.subreddit, comment.submission.id, comment.id,
-                      comment.author.name if comment.author else "[deleted]"))
+    # Functions with side effects are passed in as arguments
+    # When testing, these can be replaced with mocks or "dummy functions"
+    def scan_comment(self, comment, parent,
+                     check_already_replied,
+                     check_is_parent_commenter_author,
+                     check_points_already_awarded_to_ancestor,
+                     strict=True):
+        # logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
+        #              (self.config.subreddit, comment.submission.id, comment.id,
+        #               comment.author.name if comment.author else "[deleted]"))
+        log = ""
+        message = None
+        awardee = None
 
         if str_contains_token(comment.body, self.config.tokens) or not strict:
-            parent = self.reddit.get_info(thing_id=comment.parent_id)
             parent_author = str(parent.author.name).lower()
             me = self.config.account['username'].lower()
             if parent_author == me:
-                logging.info("No points awarded, replying to DeltaBot")
+                log="No points awarded, replying to DeltaBot"
 
-            elif self.already_replied(comment):
-                logging.info("No points awarded, already replied")
+            elif check_already_replied(comment):
+                log = "No points awarded, already replied"
 
-            elif strict and self.is_parent_commenter_author(comment):
-                logging.info("No points awarded, parent is OP")
+            elif strict and check_is_parent_commenter_author(comment, parent):
+                log = "No points awarded, parent is OP"
                 message = self.get_message('broken_rule')
-                comment.reply(message).distinguish()
 
-            elif strict and self.points_already_awarded_to_ancestor(comment):
-                logging.info("No points awarded, already awarded")
+            elif strict and check_points_already_awarded_to_ancestor(comment):
+                log = "No points awarded, already awarded"
                 message = self.get_message('already_awarded') % parent.author
-                comment.reply(message).distinguish()
 
             elif strict and self.is_comment_too_short(comment):
-                logging.info("No points awarded, too short")
+                log = "No points awarded, too short"
                 message = self.get_message('too_little_text') % parent.author
-                comment.reply(message).distinguish()
 
             else:
-                self.award_points(parent.author.name, comment)
+                awardee = parent.author.name
                 message = self.get_message('confirmation') % (parent.author,
                     self.config.subreddit, parent.author)
-                comment.reply(message).distinguish()
+        else:
+            log = "No points awarded, comment does not contain Delta"
+
+        return (log, message, awardee)
+
+
+    # Wrapper function to keep side effects out of scan_comments
+    def scan_comment_wrapper(self, comment):
+        parent = self.reddit.get_info(thing_id=comment.parent_id)
+
+        log, message, awardee = self.scan_comment(comment, parent,
+                                                  self.already_replied,
+                                                  self.is_parent_commenter_author,
+                                                  self.points_already_awarded_to_ancestor)
+        logging.info(log)
+
+        if message:
+            comment.reply(message).distinguish()
+
+        if awardee:
+            self.award_points(awardee, comment)
+
 
 
     def scan_comments(self):
@@ -341,7 +367,8 @@ class DeltaBot(object):
 
         for comment in self.subreddit.get_comments(params={'before': before_id},
                                                    limit=None):
-            self.scan_comment(comment)
+
+            self.scan_comment_wrapper(comment)
             if not self.before or comment.name > self.before[-1]:
                 self.before.append(comment.name)
 
