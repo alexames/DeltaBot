@@ -126,18 +126,25 @@ def scoreboard_to_markdown(scoreboard):
 
 
 class DeltaBot(object):
-    def __init__(self, config):
-        logging.info('connecting to reddit')
+    def __init__(self, config, test=False, test_reddit=None, test_before=None):
         self.config = config
-        self.reddit = praw.Reddit(self.config.subreddit + ' bot',
-                                  site_name=config.site_name)
+
+        if test:
+            self.reddit = test_reddit
+            before_id = test_before
+        else:
+            logging.info('connecting to reddit')
+            self.reddit = praw.Reddit(self.config.subreddit + ' bot',
+                                      site_name=config.site_name)
+            before_id = read_saved_id(self.config.last_comment_filename)
+
         self.reddit.login(*[self.config.account['username'],
                           self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.before = collections.deque([], 10)
-        before_id = read_saved_id(self.config.last_comment_filename)
+
         if before_id:
             self.before.append(before_id)
         self.changes_made = False
@@ -240,37 +247,42 @@ class DeltaBot(object):
         return len(comment.body) < self.minimum_comment_length
 
 
-    def already_replied(self, comment):
+    def already_replied(self, comment, test=False):
         """ Returns true if Deltabot has replied to this comment """
-        comment = self.reddit.get_submission(comment.permalink).comments[0]
+        replies = comment.replies
+
+        # Needed in order to refresh comments
+        if not test:
+            replies = self.reddit.get_submission(comment.permalink).comments[0].replies
+
         message = self.get_message('confirmation')
-        for reply in comment.replies:
+        for reply in replies:
             author = str(reply.author).lower()
             me = self.config.account['username'].lower()
             if author == me:
                 if str(message)[0:15] in str(reply):
                     return True
                 else:
+                    #FIXME: Side Effect!!!
                     reply.delete()
-                    return False                 
+                    return False
         return False
 
 
-    def is_parent_commenter_author(self, comment):
+    def is_parent_commenter_author(self, comment, parent):
         """ Returns true if the author of the parent comment the submitter """
-        comment_author = self.reddit.get_info(thing_id=comment.parent_id).author
+        comment_author = parent.author
         post_author = comment.submission.author
         return comment_author == post_author
 
 
-    def points_already_awarded_to_ancestor(self, comment):
+    def points_already_awarded_to_ancestor(self, comment, parent):
         """ Returns true if a point was awarded by the comment's author already
         in this branch of the comment tree """
-        parent = self.reddit.get_info(thing_id=comment.parent_id)
         awarder = comment.author
         awardee = parent.author
         while not comment.is_root:
-            comment = self.reddit.get_info(thing_id=comment.parent_id)
+            comment = parent
             parent = self.reddit.get_info(thing_id=parent.parent_id)
 
             if (comment.author == awarder
@@ -281,41 +293,67 @@ class DeltaBot(object):
         return False
 
 
-    def scan_comment(self, comment, strict=True):
-        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
-                     (self.config.subreddit, comment.submission.id, comment.id,
-                      comment.author.name if comment.author else "[deleted]"))
+    # Functions with side effects are passed in as arguments
+    # When testing, these can be replaced with mocks or "dummy functions"
+    def scan_comment(self, comment, parent,
+                     check_already_replied,
+                     check_is_parent_commenter_author,
+                     check_points_already_awarded_to_ancestor,
+                     strict=True):
+        # logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
+        #              (self.config.subreddit, comment.submission.id, comment.id,
+        #               comment.author.name if comment.author else "[deleted]"))
+        log = ""
+        message = None
+        awardee = None
 
         if str_contains_token(comment.body, self.config.tokens) or not strict:
-            parent = self.reddit.get_info(thing_id=comment.parent_id)
             parent_author = str(parent.author.name).lower()
             me = self.config.account['username'].lower()
             if parent_author == me:
-                logging.info("No points awarded, replying to DeltaBot")
+                log="No points awarded, replying to DeltaBot"
 
-            elif self.already_replied(comment):
-                logging.info("No points awarded, already replied")
+            elif check_already_replied(comment):
+                log = "No points awarded, already replied"
 
-            elif strict and self.is_parent_commenter_author(comment):
-                logging.info("No points awarded, parent is OP")
+            elif strict and check_is_parent_commenter_author(comment, parent):
+                log = "No points awarded, parent is OP"
                 message = self.get_message('broken_rule')
-                comment.reply(message).distinguish()
 
-            elif strict and self.points_already_awarded_to_ancestor(comment):
-                logging.info("No points awarded, already awarded")
+            elif strict and check_points_already_awarded_to_ancestor(comment, parent):
+                log = "No points awarded, already awarded"
                 message = self.get_message('already_awarded') % parent.author
-                comment.reply(message).distinguish()
 
             elif strict and self.is_comment_too_short(comment):
-                logging.info("No points awarded, too short")
+                log = "No points awarded, too short"
                 message = self.get_message('too_little_text') % parent.author
-                comment.reply(message).distinguish()
 
             else:
-                self.award_points(parent.author.name, comment)
+                awardee = parent.author.name
                 message = self.get_message('confirmation') % (parent.author,
                     self.config.subreddit, parent.author)
-                comment.reply(message).distinguish()
+        else:
+            log = "No points awarded, comment does not contain Delta"
+
+        return (log, message, awardee)
+
+
+    # Wrapper function to keep side effects out of scan_comments
+    def scan_comment_wrapper(self, comment):
+        parent = self.reddit.get_info(thing_id=comment.parent_id)
+
+        log, message, awardee = self.scan_comment(comment, parent,
+                                                  self.already_replied,
+                                                  self.is_parent_commenter_author,
+                                                  self.points_already_awarded_to_ancestor)
+        logging.info(log)
+
+        if message:
+            comment.reply(message).distinguish()
+
+        if awardee:
+            self.award_points(awardee, comment)
+
 
 
     def scan_comments(self):
@@ -334,7 +372,8 @@ class DeltaBot(object):
 
         for comment in self.subreddit.get_comments(params={'before': before_id},
                                                    limit=None):
-            self.scan_comment(comment)
+
+            self.scan_comment_wrapper(comment)
             if not self.before or comment.name > self.before[-1]:
                 self.before.append(comment.name)
 
@@ -515,7 +554,7 @@ class DeltaBot(object):
     def update_wiki_tracker(self, comment):
         logging.info("Updating wiki")
         """ Update wiki page of person earning the delta
-        
+
             Note: comment passed in is the comment awarding the delta,
             parent comment is the one earning the delta
         """
@@ -535,7 +574,7 @@ class DeltaBot(object):
                 flair_count = flair_count + " deltas"
         awarder_name = comment.author.name
         today = datetime.date.today()
-        
+
         # try to get wiki page for user, throws exception if page doesn't exist
         try:
             user_wiki_page = self.reddit.get_wiki_page(self.config.subreddit,
@@ -559,10 +598,10 @@ class DeltaBot(object):
                 ))
             # search old page content for link
             old_link = regex.search(old_content)
-            
+
             # variable for updated wiki content
             new_content = ""
-            
+
             # old link exists, only increase number of deltas for post
             if old_link:
                 # use re.sub to increment number of deltas in link
@@ -571,16 +610,16 @@ class DeltaBot(object):
                     lambda match: "(" + str(int(match.group(1)) + 1) + ")",
                                   old_link.group(0)
                     )
-                
+
                 # insert link to new delta
                 new_link += "\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (
-                    awarder_name, comment_url + "?context=2", 
+                    awarder_name, comment_url + "?context=2",
                     today.month, today.day, today.year
                     )
-                
+
                 #use re.sub to replace old link with new link
                 new_content = re.sub(regex, new_link, old_content)
-                
+
             # no old link, create old link with initial count of 1
             else:
                 # create link and format as markdown list item
@@ -588,67 +627,67 @@ class DeltaBot(object):
                 # the comment awarding it
                 # "(1)" is the number of deltas earned from that comment
                 # (1 because this is the first delta the user has earned)
-                add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title, 
-              submission_url, 
-              awarder_name, 
-              comment_url + "?context=2", 
+                add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title,
+              submission_url,
+              awarder_name,
+              comment_url + "?context=2",
               today.month,
               today.day,
               today.year)
-                 
+
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
-                
+
             # overwrite old content with new content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        user_wiki_page.page,
                                        new_content,
                                        "Updated delta links.")
-                
+
         # if page doesn't exist, create page with initial content
         except:
-            
+
             # create header for new wiki page
             initial_text = "/u/%s has received 1 delta for the following comments:" % parent_author
-            
+
             # create link and format as markdown list item
             # "?context=2" means link shows comment earning the delta and the comment awarding it
-            # "(1)" is the number of deltas earned from that comment 
+            # "(1)" is the number of deltas earned from that comment
             # (1 because this is the first delta the user has earned)
-            add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title, 
-          submission_url, 
-          awarder_name, 
-          comment_url + "?context=2", 
+            add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title,
+          submission_url,
+          awarder_name,
+          comment_url + "?context=2",
           today.month, today.day, today.year)
-            
+
             # combine header and link
             full_update = initial_text + add_link
-            
+
             # write new content to wiki page
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        "user/" + parent_author,
                                        full_update,
                                        "Created user's delta links page.")
-            
+
             """Add new awardee to Delta Tracker wiki page"""
-            
+
             # get delta tracker wiki page
             delta_tracker_page = self.reddit.get_wiki_page(
                                                           self.config.subreddit,
                                                           "delta_tracker")
-            
+
             # retrieve delta tracker page content as markdown string
             delta_tracker_page_body = delta_tracker_page.content_md
-            
+
             # create link to user's wiki page as markdown list item
             new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (
                                                           parent_author,
                                                           self.config.subreddit,
                                                           parent_author)
-            
+
             # append new link to old content
             new_content = delta_tracker_page_body + new_link
-            
+
             # overwrite old page content with new page content
             self.reddit.edit_wiki_page(self.config.subreddit,
                                        "delta_tracker",

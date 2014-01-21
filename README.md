@@ -8,12 +8,14 @@ It works by reading a subreddit, looking for specific tokens that denote that a 
 
 1. Make sure you have Python and PRAW installed.
 2. Create the file `config.json` and fill in the appropriate fields using `config.json.example` as a template.
-3. Linux users: Run `runbot.sh`. Windows users: Run `winrun.bat`. CLI: Type `python deltabot` from the root folder of the program.
+3. Linux/Mac users: Run `runbot.sh`. Windows users: Run `winrun.bat`. CLI: Type `python deltabot` from the root folder of the program.
 
 Make sure whatever account you're using to run the bot is a moderator of your subreddit and has permission to edit flair and the wiki.
 
 ## Contribute
 
 If you're a developer visit the developer subreddit [/r/DeltaBot](http://reddit.com/r/DeltaBot)
+
+Check out requirements_doc.txt to get an idea of what DeltaBot needs to do. To see new features that have not been implemented yet, check the Issues page.
 
 [Join us on IRC!](http://webchat.snoonet.org/DeltaBot) (Snoonet #DeltaBot)
