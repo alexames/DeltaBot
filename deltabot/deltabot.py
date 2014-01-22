@@ -263,7 +263,6 @@ class DeltaBot(object):
                 if str(message)[0:15] in str(reply):
                     return True
                 else:
-                    #FIXME: Side Effect!!!
                     reply.delete()
                     return False
         return False
@@ -300,9 +299,11 @@ class DeltaBot(object):
                      check_is_parent_commenter_author,
                      check_points_already_awarded_to_ancestor,
                      strict=True):
-        # logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
-        #              (self.config.subreddit, comment.submission.id, comment.id,
-        #               comment.author.name if comment.author else "[deleted]"))
+        logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
+                      (self.config.subreddit, comment.submission.id, comment.id,
+                       comment.author.name if comment.author else "[deleted]"))
+
+        # Logs describing the output will be returned so they can be used for testing
         log = ""
         message = None
         awardee = None
@@ -430,6 +431,7 @@ class DeltaBot(object):
 
 
     def rescan_comment(self, bots_comment):
+        """Rescan comments that were too short"""
         orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
         awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
         awardee = awardees_comment.author.name
