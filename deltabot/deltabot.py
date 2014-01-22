@@ -132,14 +132,16 @@ class DeltaBot(object):
         if test:
             self.reddit = test_reddit
             before_id = test_before
+            self.reddit.login(*[self.config.test_account['username'],
+                                self.config.test_account['password']])
         else:
             logging.info('connecting to reddit')
             self.reddit = praw.Reddit(self.config.subreddit + ' bot',
                                       site_name=config.site_name)
             before_id = read_saved_id(self.config.last_comment_filename)
+            self.reddit.login(*[self.config.account['username'],
+                                self.config.account['password']])
 
-        self.reddit.login(*[self.config.account['username'],
-                          self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
