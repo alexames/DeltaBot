@@ -339,7 +339,7 @@ class DeltaBot(object):
 
 
     # Wrapper function to keep side effects out of scan_comments
-    def scan_comment_wrapper(self, comment):
+    def scan_comment_wrapper(self, comment, strict=True):
         parent = self.reddit.get_info(thing_id=comment.parent_id)
 
         log, message, awardee = self.scan_comment(comment, parent,
