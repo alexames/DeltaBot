@@ -345,7 +345,8 @@ class DeltaBot(object):
         log, message, awardee = self.scan_comment(comment, parent,
                                                   self.already_replied,
                                                   self.is_parent_commenter_author,
-                                                  self.points_already_awarded_to_ancestor)
+                                                  self.points_already_awarded_to_ancestor,
+                                                  strict)
         logging.info(log)
 
         if message:
@@ -383,7 +384,7 @@ class DeltaBot(object):
         for id in ids:
             comment = self.reddit.get_info(thing_id='t1_%s' % id)
             if type(comment) is praw.objects.Comment:
-                self.scan_comment(comment, strict=strict)
+                self.scan_comment_wrapper(comment, strict=strict)
 
 
     def is_moderator(self, name):
