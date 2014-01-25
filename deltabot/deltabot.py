@@ -133,14 +133,15 @@ class DeltaBot(object):
             self.reddit = test_reddit
             before_id = test_before
         else:
-            logging.info('connecting to reddit')
             self.reddit = praw.Reddit(self.config.subreddit + ' bot',
                                       site_name=config.site_name)
             before_id = read_saved_id(self.config.last_comment_filename)
+            logging.info('Connecting to reddit')
 
         self.reddit.login(*[self.config.account['username'],
                           self.config.account['password']])
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
+        logging.info("Logged in as %s" % self.config.account['username'])
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.before = collections.deque([], 10)
@@ -311,7 +312,7 @@ class DeltaBot(object):
             parent_author = str(parent.author.name).lower()
             me = self.config.account['username'].lower()
             if parent_author == me:
-                log="No points awarded, replying to DeltaBot"
+                log = "No points awarded, replying to DeltaBot"
 
             elif check_already_replied(comment):
                 log = "No points awarded, already replied"
