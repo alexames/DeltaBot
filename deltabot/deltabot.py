@@ -411,6 +411,10 @@ class DeltaBot(object):
             if command == "add" or command == "force add":
                 strict = (command != "force add")
                 self.command_add(message.body, strict)
+                self.reddit.send_message(message.author,
+                                         "Add complete",
+                                         "The add command has been "
+                                         "completed on: " + message.body)
 
             elif command == "remove":
                 # Todo
@@ -729,7 +733,7 @@ class DeltaBot(object):
                                                        self.before else "None"))
             logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             reset_counter = reset_counter + 1
-            print "Reset Counter at %s."
+            print "Reset Counter at %s." % reset_counter
             print "When this reaches 10, the script will clear its history."
             if reset_counter == 10:
               self.before.clear()
