@@ -444,7 +444,7 @@ class DeltaBot(object):
                                         awardee)
                 and not self.is_comment_too_short(orig_comment)
                 and not self.is_parent_commenter_author(orig_comment)
-                and not self.points_already_awarded_to_ancestor(orig_comment)):
+                and not self.points_already_awarded_to_ancestor(orig_comment, awardees_comment)):
             self.award_points(awardee, orig_comment)
             message = self.get_message('confirmation') % (
                           awardee, self.config.subreddit, awardee
