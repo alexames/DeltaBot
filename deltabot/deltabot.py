@@ -704,6 +704,7 @@ class DeltaBot(object):
     def go(self):
         """ Start DeltaBot. """
         self.running = True
+        reset_counter = 0
         while self.running:
             old_before_id = self.before[-1] if self.before else None
             logging.info("Starting iteration at %s" % old_before_id or "None")
@@ -727,4 +728,9 @@ class DeltaBot(object):
             logging.info("Iteration complete at %s" % (self.before[-1] if
                                                        self.before else "None"))
             logging.info("Sleeping for %s seconds" % self.config.sleep_time)
+            reset_counter = reset_counter + 1
+            print "Reset Counter at %s."
+            print "When this reaches 10, the script will clear its history."
+            if reset_counter == 10:
+              self.before.clear()
             time.sleep(self.config.sleep_time)
