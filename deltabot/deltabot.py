@@ -132,15 +132,23 @@ class DeltaBot(object):
         if test:
             self.reddit = test_reddit
             before_id = test_before
+<<<<<<< HEAD
             self.reddit.login(*[self.config.test.account['username'],
                                 self.config.test.account['password']])
+=======
+            self.reddit.login(*[self.config.test_account['username'],
+                                self.config.test_account['password']])
+>>>>>>> new_tests
         else:
             self.reddit = praw.Reddit(self.config.subreddit + ' bot',
                                       site_name=config.site_name)
             before_id = read_saved_id(self.config.last_comment_filename)
             self.reddit.login(*[self.config.account['username'],
                                 self.config.account['password']])
+<<<<<<< HEAD
             logging.info('Connecting to reddit')
+=======
+>>>>>>> new_tests
 
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         logging.info("Logged in as %s" % self.config.account['username'])
@@ -303,8 +311,13 @@ class DeltaBot(object):
                      check_points_already_awarded_to_ancestor,
                      strict=True):
         logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
+<<<<<<< HEAD
                     (self.config.subreddit, comment.submission.id, comment.id,
                     comment.author.name if comment.author else "[deleted]"))
+=======
+                      (self.config.subreddit, comment.submission.id, comment.id,
+                       comment.author.name if comment.author else "[deleted]"))
+>>>>>>> new_tests
 
         # Logs describing the output will be returned so they can be used for testing
         log = ""
