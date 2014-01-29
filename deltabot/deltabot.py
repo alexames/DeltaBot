@@ -305,7 +305,7 @@ class DeltaBot(object):
         logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
                     (self.config.subreddit, comment.submission.id, comment.id,
                     comment.author.name if comment.author else "[deleted]"))
-                    
+
         # Logs describing the output will be returned so they can be used for testing
         log = ""
         message = None
