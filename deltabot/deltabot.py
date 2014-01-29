@@ -311,13 +311,8 @@ class DeltaBot(object):
                      check_points_already_awarded_to_ancestor,
                      strict=True):
         logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
-<<<<<<< HEAD
                     (self.config.subreddit, comment.submission.id, comment.id,
                     comment.author.name if comment.author else "[deleted]"))
-=======
-                      (self.config.subreddit, comment.submission.id, comment.id,
-                       comment.author.name if comment.author else "[deleted]"))
->>>>>>> new_tests
 
         # Logs describing the output will be returned so they can be used for testing
         log = ""
