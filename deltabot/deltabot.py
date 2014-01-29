@@ -132,8 +132,9 @@ class DeltaBot(object):
         if test:
             self.reddit = test_reddit
             before_id = test_before
-            self.reddit.login(*[self.config.test.account['username'],
-                                self.config.test.account['password']])
+            self.reddit.login(*[self.config.test_account['username'],
+                                self.config.test_account['password']])
+
         else:
             self.reddit = praw.Reddit(self.config.subreddit + ' bot',
                                       site_name=config.site_name)
@@ -141,6 +142,7 @@ class DeltaBot(object):
             self.reddit.login(*[self.config.account['username'],
                                 self.config.account['password']])
             logging.info('Connecting to reddit')
+
 
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
         logging.info("Logged in as %s" % self.config.account['username'])
@@ -305,7 +307,7 @@ class DeltaBot(object):
         logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
                     (self.config.subreddit, comment.submission.id, comment.id,
                     comment.author.name if comment.author else "[deleted]"))
-                    
+
         # Logs describing the output will be returned so they can be used for testing
         log = ""
         message = None
