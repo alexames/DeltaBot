@@ -21,6 +21,13 @@ class Reddit(object):
         # Allows a custom comment to be assigned that is used to
         # verify if get_submission is working correctly.
         self._get_sub_comment = None
+        self.info = dict()
+
+    def set_info(self, thing_id, value):
+        self.info[thing_id] = value
+
+    def get_info(self, thing_id):
+        return self.info[thing_id]
 
     def login(*args, **kwargs):
         pass

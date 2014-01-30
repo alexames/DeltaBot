@@ -444,11 +444,8 @@ class DeltaBot(object):
                 message.mark_as_read()
                 os._exit(1)
 
-
-    def rescan_comment(self, bots_comment):
+    def rescan_comment(self, bots_comment, orig_comment, awardees_comment):
         """Rescan comments that were too short"""
-        orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
-        awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
         awardee = awardees_comment.author.name
 
         if (self.string_matches_message(bots_comment.body, 'too_little_text',
@@ -462,13 +459,19 @@ class DeltaBot(object):
                           )
             bots_comment.edit(message).distinguish()
 
+    # Keeps side effects out of rescan_comment to make testing easier
+    def rescan_comment_wrapper(self, bots_comment):
+        orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
+        awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
+
+        self.rescan_comment(bots_comment, orig_comment, awardees_comment)
 
     def rescan_comments(self, message_body):
         ids = re.findall(self.comment_id_regex, message_body)
         for id in ids:
             comment = self.reddit.get_info(thing_id='t1_%s' % id)
             if type(comment) is praw.objects.Comment:
-                self.rescan_comment(comment)
+                self.rescan_comment_wrapper(comment)
 
 
     def scan_comment_reply(self, comment):
@@ -482,7 +485,7 @@ class DeltaBot(object):
                                 or self.is_moderator(comment.author.name)))
 
         if valid_commenter:
-            self.rescan_comment(bots_comment)
+            self.rescan_comment_wrapper(bots_comment)
 
 
     def scan_inbox(self):
