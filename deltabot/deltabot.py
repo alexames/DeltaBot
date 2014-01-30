@@ -148,10 +148,10 @@ class DeltaBot(object):
         logging.info("Logged in as %s" % self.config.account['username'])
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
-        self.before = collections.deque([], 10)
+        self.scanned_comments = collections.deque([], 10)
 
         if before_id:
-            self.before.append(before_id)
+            self.scanned_comments.append(before_id)
         self.changes_made = False
         longest = 0
         for token in self.config.tokens:
@@ -369,20 +369,20 @@ class DeltaBot(object):
         logging.info("Scanning new comments")
 
         before_id = None
-        while self.before:
-            comment = self.reddit.get_info(thing_id=self.before[-1])
+        while self.scanned_comments:
+            comment = self.reddit.get_info(thing_id=self.scanned_comments[-1])
             if comment.body == '[deleted]':
-                self.before.pop()
+                self.scanned_comments.pop()
             else:
-                before_id = self.before[-1]
+                before_id = self.scanned_comments[-1]
                 break
 
         for comment in self.subreddit.get_comments(params={'before': before_id},
                                                    limit=None):
 
             self.scan_comment_wrapper(comment)
-            if not self.before or comment.name > self.before[-1]:
-                self.before.append(comment.name)
+            if not self.scanned_comments or comment.name > self.scanned_comments[-1]:
+                self.scanned_comments.append(comment.name)
 
 
     def command_add(self, message_body, strict):
@@ -426,7 +426,7 @@ class DeltaBot(object):
                 self.rescan_comments(message.body)
 
             elif command == "reset":
-                self.before.clear()
+                self.scanned_comments.clear()
 
             elif command == "stop":
                 self.reddit.send_message("/r/" + self.config.subreddit,
@@ -712,7 +712,7 @@ class DeltaBot(object):
         self.running = True
         reset_counter = 0
         while self.running:
-            old_before_id = self.before[-1] if self.before else None
+            old_before_id = self.scanned_comments[-1] if self.scanned_comments else None
             logging.info("Starting iteration at %s" % old_before_id or "None")
 
             try:
@@ -727,17 +727,17 @@ class DeltaBot(object):
                 traceback.print_exc(file=sys.stdout)
                 print '-'*60
 
-            if self.before and old_before_id is not self.before[-1]:
+            if self.scanned_comments and old_before_id is not self.scanned_comments[-1]:
                 write_saved_id(self.config.last_comment_filename,
-                               self.before[-1])
+                               self.scanned_comments[-1])
 
-            logging.info("Iteration complete at %s" % (self.before[-1] if
-                                                       self.before else "None"))
+            logging.info("Iteration complete at %s" % (self.scanned_comments[-1] if
+                                                       self.scanned_comments else "None"))
             reset_counter = reset_counter + 1
             print "Reset Counter at %s." % reset_counter
             print "When this reaches 10, the script will clear its history."
             if reset_counter == 10:
-              self.before.clear()
+              self.scanned_comments.clear()
               reset_counter = 0
             logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             time.sleep(self.config.sleep_time)
