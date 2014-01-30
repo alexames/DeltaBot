@@ -3,6 +3,6 @@ python:
   - "3.3"
   - "2.7"
 
-install: pip install praw
+install: "pip install praw"
 
 script:  ./runtests.sh
