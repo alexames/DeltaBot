@@ -361,12 +361,9 @@ class DeltaBot(object):
         if awardee:
             self.award_points(awardee, comment)
 
-
-
-    def scan_comments(self):
-        """ Scan a given list of comments for tokens. If a token is found,
-        award points. """
-        logging.info("Scanning new comments")
+    def get_most_recent_comment(self):
+        """Finds the most recently scanned comment,
+        so we know where to begin the next scan"""
 
         most_recent_comment_id = None
         while self.scanned_comments:
@@ -377,9 +374,17 @@ class DeltaBot(object):
                 most_recent_comment_id = self.scanned_comments[-1]
                 break
 
-        for comment in self.subreddit.get_comments(params={'before': most_recent_comment_id},
-                                                   limit=None):
+        return most_recent_comment_id
 
+    def scan_comments(self):
+        """ Scan a given list of comments for tokens. If a token is found,
+        award points. """
+        logging.info("Scanning new comments")
+
+        fresh_comments = self.subreddit.get_comments(params={'before': self.get_most_recent_comment()},
+                                                    limit=None)
+
+        for comment in fresh_comments:
             self.scan_comment_wrapper(comment)
             if not self.scanned_comments or comment.name > self.scanned_comments[-1]:
                 self.scanned_comments.append(comment.name)
