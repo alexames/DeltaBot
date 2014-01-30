@@ -126,19 +126,19 @@ def scoreboard_to_markdown(scoreboard):
 
 
 class DeltaBot(object):
-    def __init__(self, config, test=False, test_reddit=None, test_before=None):
+    def __init__(self, config, test=False, test_reddit=None, test_recent=None):
         self.config = config
 
         if test:
             self.reddit = test_reddit
-            before_id = test_before
+            most_recent_comment_id = test_recent
             self.reddit.login(*[self.config.test_account['username'],
                                 self.config.test_account['password']])
 
         else:
             self.reddit = praw.Reddit(self.config.subreddit + ' bot',
                                       site_name=config.site_name)
-            before_id = read_saved_id(self.config.last_comment_filename)
+            most_recent_comment_id = read_saved_id(self.config.last_comment_filename)
             self.reddit.login(*[self.config.account['username'],
                                 self.config.account['password']])
             logging.info('Connecting to reddit')
@@ -150,8 +150,8 @@ class DeltaBot(object):
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.scanned_comments = collections.deque([], 10)
 
-        if before_id:
-            self.scanned_comments.append(before_id)
+        if most_recent_comment_id:
+            self.scanned_comments.append(most_recent_comment_id)
         self.changes_made = False
         longest = 0
         for token in self.config.tokens:
@@ -368,16 +368,16 @@ class DeltaBot(object):
         award points. """
         logging.info("Scanning new comments")
 
-        before_id = None
+        most_recent_comment_id = None
         while self.scanned_comments:
             comment = self.reddit.get_info(thing_id=self.scanned_comments[-1])
             if comment.body == '[deleted]':
                 self.scanned_comments.pop()
             else:
-                before_id = self.scanned_comments[-1]
+                most_recent_comment_id = self.scanned_comments[-1]
                 break
 
-        for comment in self.subreddit.get_comments(params={'before': before_id},
+        for comment in self.subreddit.get_comments(params={'before': most_recent_comment_id},
                                                    limit=None):
 
             self.scan_comment_wrapper(comment)
@@ -712,8 +712,8 @@ class DeltaBot(object):
         self.running = True
         reset_counter = 0
         while self.running:
-            old_before_id = self.scanned_comments[-1] if self.scanned_comments else None
-            logging.info("Starting iteration at %s" % old_before_id or "None")
+            old_comment_id = self.scanned_comments[-1] if self.scanned_comments else None
+            logging.info("Starting iteration at %s" % old_comment_id or "None")
 
             try:
                 self.scan_inbox()
@@ -727,7 +727,7 @@ class DeltaBot(object):
                 traceback.print_exc(file=sys.stdout)
                 print '-'*60
 
-            if self.scanned_comments and old_before_id is not self.scanned_comments[-1]:
+            if self.scanned_comments and old_comment_id is not self.scanned_comments[-1]:
                 write_saved_id(self.config.last_comment_filename,
                                self.scanned_comments[-1])
 
