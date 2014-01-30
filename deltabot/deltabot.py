@@ -733,10 +733,11 @@ class DeltaBot(object):
 
             logging.info("Iteration complete at %s" % (self.before[-1] if
                                                        self.before else "None"))
-            logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             reset_counter = reset_counter + 1
             print "Reset Counter at %s." % reset_counter
             print "When this reaches 10, the script will clear its history."
             if reset_counter == 10:
               self.before.clear()
+              reset_counter = 0
+            logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             time.sleep(self.config.sleep_time)
