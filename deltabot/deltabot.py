@@ -126,19 +126,19 @@ def scoreboard_to_markdown(scoreboard):
 
 
 class DeltaBot(object):
-    def __init__(self, config, test=False, test_reddit=None, test_before=None):
+    def __init__(self, config, test=False, test_reddit=None, test_recent=None):
         self.config = config
 
         if test:
             self.reddit = test_reddit
-            before_id = test_before
+            most_recent_comment_id = test_recent
             self.reddit.login(*[self.config.test_account['username'],
                                 self.config.test_account['password']])
 
         else:
             self.reddit = praw.Reddit(self.config.subreddit + ' bot',
                                       site_name=config.site_name)
-            before_id = read_saved_id(self.config.last_comment_filename)
+            most_recent_comment_id = read_saved_id(self.config.last_comment_filename)
             self.reddit.login(*[self.config.account['username'],
                                 self.config.account['password']])
             logging.info('Connecting to reddit')
@@ -148,10 +148,10 @@ class DeltaBot(object):
         logging.info("Logged in as %s" % self.config.account['username'])
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
-        self.before = collections.deque([], 10)
+        self.scanned_comments = collections.deque([], 10)
 
-        if before_id:
-            self.before.append(before_id)
+        if most_recent_comment_id:
+            self.scanned_comments.append(most_recent_comment_id)
         self.changes_made = False
         longest = 0
         for token in self.config.tokens:
@@ -361,28 +361,33 @@ class DeltaBot(object):
         if awardee:
             self.award_points(awardee, comment)
 
+    def get_most_recent_comment(self):
+        """Finds the most recently scanned comment,
+        so we know where to begin the next scan"""
 
+        most_recent_comment_id = None
+        while self.scanned_comments:
+            comment = self.reddit.get_info(thing_id=self.scanned_comments[-1])
+            if comment.body == '[deleted]':
+                self.scanned_comments.pop()
+            else:
+                most_recent_comment_id = self.scanned_comments[-1]
+                break
+
+        return most_recent_comment_id
 
     def scan_comments(self):
         """ Scan a given list of comments for tokens. If a token is found,
         award points. """
         logging.info("Scanning new comments")
 
-        before_id = None
-        while self.before:
-            comment = self.reddit.get_info(thing_id=self.before[-1])
-            if comment.body == '[deleted]':
-                self.before.pop()
-            else:
-                before_id = self.before[-1]
-                break
+        fresh_comments = self.subreddit.get_comments(params={'before': self.get_most_recent_comment()},
+                                                    limit=None)
 
-        for comment in self.subreddit.get_comments(params={'before': before_id},
-                                                   limit=None):
-
+        for comment in fresh_comments:
             self.scan_comment_wrapper(comment)
-            if not self.before or comment.name > self.before[-1]:
-                self.before.append(comment.name)
+            if not self.scanned_comments or comment.name > self.scanned_comments[-1]:
+                self.scanned_comments.append(comment.name)
 
 
     def command_add(self, message_body, strict):
@@ -426,7 +431,7 @@ class DeltaBot(object):
                 self.rescan_comments(message.body)
 
             elif command == "reset":
-                self.before.clear()
+                self.scanned_comments.clear()
 
             elif command == "stop":
                 self.reddit.send_message("/r/" + self.config.subreddit,
@@ -439,11 +444,8 @@ class DeltaBot(object):
                 message.mark_as_read()
                 os._exit(1)
 
-
-    def rescan_comment(self, bots_comment):
+    def rescan_comment(self, bots_comment, orig_comment, awardees_comment):
         """Rescan comments that were too short"""
-        orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
-        awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
         awardee = awardees_comment.author.name
 
         if (self.string_matches_message(bots_comment.body, 'too_little_text',
@@ -457,13 +459,19 @@ class DeltaBot(object):
                           )
             bots_comment.edit(message).distinguish()
 
+    # Keeps side effects out of rescan_comment to make testing easier
+    def rescan_comment_wrapper(self, bots_comment):
+        orig_comment = self.reddit.get_info(thing_id=bots_comment.parent_id)
+        awardees_comment = self.reddit.get_info(thing_id=orig_comment.parent_id)
+
+        self.rescan_comment(bots_comment, orig_comment, awardees_comment)
 
     def rescan_comments(self, message_body):
         ids = re.findall(self.comment_id_regex, message_body)
         for id in ids:
             comment = self.reddit.get_info(thing_id='t1_%s' % id)
             if type(comment) is praw.objects.Comment:
-                self.rescan_comment(comment)
+                self.rescan_comment_wrapper(comment)
 
 
     def scan_comment_reply(self, comment):
@@ -477,7 +485,7 @@ class DeltaBot(object):
                                 or self.is_moderator(comment.author.name)))
 
         if valid_commenter:
-            self.rescan_comment(bots_comment)
+            self.rescan_comment_wrapper(bots_comment)
 
 
     def scan_inbox(self):
@@ -712,8 +720,8 @@ class DeltaBot(object):
         self.running = True
         reset_counter = 0
         while self.running:
-            old_before_id = self.before[-1] if self.before else None
-            logging.info("Starting iteration at %s" % old_before_id or "None")
+            old_comment_id = self.scanned_comments[-1] if self.scanned_comments else None
+            logging.info("Starting iteration at %s" % old_comment_id or "None")
 
             try:
                 self.scan_inbox()
@@ -727,17 +735,17 @@ class DeltaBot(object):
                 traceback.print_exc(file=sys.stdout)
                 print '-'*60
 
-            if self.before and old_before_id is not self.before[-1]:
+            if self.scanned_comments and old_comment_id is not self.scanned_comments[-1]:
                 write_saved_id(self.config.last_comment_filename,
-                               self.before[-1])
+                               self.scanned_comments[-1])
 
-            logging.info("Iteration complete at %s" % (self.before[-1] if
-                                                       self.before else "None"))
+            logging.info("Iteration complete at %s" % (self.scanned_comments[-1] if
+                                                       self.scanned_comments else "None"))
             reset_counter = reset_counter + 1
             print "Reset Counter at %s." % reset_counter
             print "When this reaches 10, the script will clear its history."
             if reset_counter == 10:
-              self.before.clear()
+              self.scanned_comments.clear()
               reset_counter = 0
             logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             time.sleep(self.config.sleep_time)
