@@ -35,7 +35,7 @@ import datetime
 import traceback
 from HTMLParser import HTMLParser
 import collections
-from random import choice
+import random
 
 
 logging.getLogger('requests').setLevel(logging.WARNING)
@@ -170,8 +170,7 @@ class DeltaBot(object):
         """ Given a type of message select one of the messages from the
         configuration at random. """
         messages = self.config.messages[message_key]
-        return choice(messages) + self.config.messages['append_to_all_messages']
-
+        return random.choice(messages) + self.config.messages['append_to_all_messages']
 
     def string_matches_message(self, string, message_key, *args):
         messages = self.config.messages[message_key]
