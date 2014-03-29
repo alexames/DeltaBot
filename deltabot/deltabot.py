@@ -88,16 +88,9 @@ def write_saved_id(filename, the_id):
 
 def read_saved_id(filename):
     """ Get the last comment's ID from file. """
-    logging.debug("Reading ID from file %s" % filename)
-    try:
-        id_file = open(filename, 'r')
-        current = id_file.readline()
-        if current == "None":
-            current = None
-        id_file.close()
-        return current
-    except IOError:
-        return None
+    with open(filename, 'r') as _file:
+        current = _file.readline()
+        return current if current != 'None' else 'None'
 
 
 def markdown_to_scoreboard(text):
@@ -154,19 +147,21 @@ class DeltaBot(object):
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.scanned_comments = collections.deque([], 10)
 
-        if most_recent_comment_id:
+        try:
+            most_recent_comment_id = read_saved_id(self.config.last_comment_filename)
+        except IOError:
+            logging.error("The 'last comment' file does not exist. Check the config.")
+            raise
+
+        if most_recent_comment_id is not None:
             self.scanned_comments.append(most_recent_comment_id)
+
         self.changes_made = False
-        longest = 0
-        for token in self.config.tokens:
-            if len(token) > longest:
-                longest = len(token)
-        self.minimum_comment_length = longest + \
-                                      self.config.minimum_comment_length
+        self.minimum_comment_length = get_longest_token_length(self.config.tokens) + self.config.minimum_comment_length
 
     def send_first_time_message(self, recipient_name):
         first_time_message = self.config.private_message % (
-                                 self.config.subreddit, recipient_name)
+            self.config.subreddit, recipient_name)
         self.reddit.send_message(recipient_name,
                                  "Congratulations on your first delta!",
                                  first_time_message)
