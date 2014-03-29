@@ -1,7 +1,7 @@
 # development environment
-*.sublime-workspace
 *.idea
 .idea/*
+*.sublime*
 
 # compiled
 *.pyc
