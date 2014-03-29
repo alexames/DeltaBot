@@ -116,13 +116,12 @@ def markdown_to_scoreboard(text):
 
 
 def scoreboard_to_markdown(scoreboard):
-    text = ""
+    join_list = []
     for key, value in scoreboard.iteritems():
-        text += "## %s %s\n" % (key, value["score"])
+        join_list.append("## %s %s\n" % (key, value["score"]))
         for link in value["links"]:
-            text += "* %s\n" % link
-        text += "\n"
-    return text
+            join_list.append("* %s\n" % link)
+    return "\n".join(join_list)
 
 
 class DeltaBot(object):
