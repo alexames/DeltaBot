@@ -122,27 +122,34 @@ def scoreboard_to_markdown(scoreboard):
     return "\n".join(join_list)
 
 
+def login_to_reddit(reddit, config):
+    """
+    Logs into reddit with the given config.
+    """
+    return reddit.login(config.account['username'], config.account['password'])
+
+
+def get_longest_token_length(tokens):
+    """
+    Returns the length of the longest token within an iterable.
+    Returns 0 if the list is empty or None
+    """
+    if tokens is None or len(tokens) == 0:
+        return 0
+    return len(max(tokens, key=lambda t: len(t)))
+
+
 class DeltaBot(object):
-    def __init__(self, config, test=False, test_reddit=None, test_recent=None):
+    def __init__(self, config, reddit):
         self.config = config
+        self.running = False
+        self.reddit = reddit
 
-        if test:
-            self.reddit = test_reddit
-            most_recent_comment_id = test_recent
-            self.reddit.login(*[self.config.test_account['username'],
-                                self.config.test_account['password']])
-
-        else:
-            self.reddit = praw.Reddit(self.config.subreddit + ' bot',
-                                      site_name=config.site_name)
-            most_recent_comment_id = read_saved_id(self.config.last_comment_filename)
-            self.reddit.login(*[self.config.account['username'],
-                                self.config.account['password']])
-            logging.info('Connecting to reddit')
-
+        logging.info('Connecting to reddit...')
+        login_to_reddit(self.reddit, self.config)
+        logging.info("Logged in as %s" % self.config.account['username'])
 
         self.subreddit = self.reddit.get_subreddit(self.config.subreddit)
-        logging.info("Logged in as %s" % self.config.account['username'])
         self.comment_id_regex = '(?:http://)?(?:www\.)?reddit\.com/r(?:eddit)?/' + \
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.scanned_comments = collections.deque([], 10)
