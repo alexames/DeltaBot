@@ -82,10 +82,8 @@ def str_contains_token(text, tokens):
 
 def write_saved_id(filename, the_id):
     """ Write the previous comment's ID to file. """
-    logging.debug("Saving ID %s to file %s" % (the_id, filename))
-    id_file = open(filename, 'w')
-    id_file.write(the_id if the_id else "None")
-    id_file.close()
+    with open(filename, 'w') as _file:
+        _file.write(the_id if the_id else "None")
 
 
 def read_saved_id(filename):
