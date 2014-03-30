@@ -1,7 +1,6 @@
 import logging
 import deltabot
 import config
-import json
 import os
 
 def sandbox():
