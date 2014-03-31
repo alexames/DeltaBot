@@ -2,14 +2,12 @@ import logging
 import deltabot
 import config
 import os
+import praw
 
 
 def sandbox():
     #FOR TESTING. Put whatever here.
     bot = deltabot.DeltaBot()
-
-
-import praw
 
 
 def main():
