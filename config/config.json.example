@@ -37,7 +37,9 @@
 
     "flair": {
         "point_text": "%s∆",
-        "css_class": "points"
+        "css_class": "points",
+        "top1":  "pholder",
+        "top10": "pholder"
     },
 
     "last_comment_filename": "prev_id.txt",
