@@ -22,7 +22,7 @@
 # along with Deltabot.  If not, see <http://www.gnu.org/licenses/>.            #
 #                                                                              #
 ################################################################################
-
+from __future__ import print_function
 
 import re
 import os
@@ -33,9 +33,14 @@ import logging
 import calendar
 import datetime
 import traceback
-from HTMLParser import HTMLParser
 import collections
 from random import choice
+
+
+try:
+    from HTMLParser import HTMLParser
+except ImportError: # Python 3
+    from html.parser import HTMLParser
 
 
 logging.getLogger('requests').setLevel(logging.WARNING)
@@ -83,20 +88,23 @@ def str_contains_token(text, tokens):
 def write_saved_id(filename, the_id):
     """ Write the previous comment's ID to file. """
     logging.debug("Saving ID %s to file %s" % (the_id, filename))
-    id_file = open(filename, 'w')
-    id_file.write(the_id if the_id else "None")
-    id_file.close()
+    with open(filename, 'w') as id_file:
+        id_file.write(the_id if the_id else "None")
+    #id_file = open(filename, 'w')
+    #id_file.write(the_id if the_id else "None")
+    #id_file.close()
 
 
 def read_saved_id(filename):
     """ Get the last comment's ID from file. """
     logging.debug("Reading ID from file %s" % filename)
     try:
-        id_file = open(filename, 'r')
-        current = id_file.readline()
-        if current == "None":
-            current = None
-        id_file.close()
+        #id_file = open(filename, 'r')
+        with open(filename, 'r') as id_file:
+            current = id_file.readline()
+            if current == "None":
+                current = None
+        #id_file.close()
         return current
     except IOError:
         return None
@@ -104,7 +112,7 @@ def read_saved_id(filename):
 
 def markdown_to_scoreboard(text):
     scoreboard = {}
-    for line in text.split('\n'):
+    for line in text.splitlines():
         if line[:2] == '##':
             tokens = line.split()
             username = tokens[1]
@@ -117,7 +125,11 @@ def markdown_to_scoreboard(text):
 
 def scoreboard_to_markdown(scoreboard):
     text = ""
-    for key, value in scoreboard.iteritems():
+    try:
+        itms = scoreboard.iteritems()
+    except AttributeError: # Python 3
+        itms = scoreboard.items()
+    for key, value in itms:
         text += "## %s %s\n" % (key, value["score"])
         for link in value["links"]:
             text += "* %s\n" % link
@@ -280,21 +292,34 @@ class DeltaBot(object):
         return comment_author == post_author
 
 
-    def points_already_awarded_to_ancestor(self, comment, parent):
-        """ Returns true if a point was awarded by the comment's author already
-        in this branch of the comment tree """
-        awarder = comment.author
-        awardee = parent.author
-        while not comment.is_root:
-            comment = parent
-            parent = self.reddit.get_info(thing_id=parent.parent_id)
-
-            if (comment.author == awarder
-                and parent.author == awardee
-                and str_contains_token(comment.body, self.config.tokens)):
+    def points_awarded_to_children(self, awardee, comment, confirm_msg=None, me=None):
+        """ Returns True if the OP awarded a delta to this comment or any of its
+        children, by looking for confirmation messages from this bot. """
+        
+        if confirm_msg is None:
+            confirm_msg = (self.get_message('confirmation') 
+                            % (awardee, self.config.subreddit, awardee))
+        if me is None:
+            me = self.config["account"]["username"]
+        
+        # If this is a confirmation message, return True now
+        if comment.author == me and confirm_msg in comment.body:
+            return True
+        # Otherwise, recurse
+        for reply in comment.replies:
+            if self.points_awarded_to_children(awardee, reply, confirm_msg, me):
                 return True
-
         return False
+
+
+    def points_already_awarded_to_ancestor(self, comment, parent):
+        awardee = parent.author
+        # First, traverse to root comment
+        root = parent
+        while not root.is_root:
+            root = self.reddit.get_info(thing_id=root.parent_id)
+        # Then, delegate to the recursive function above
+        return self.points_awarded_to_children(awardee, root)
 
 
     # Functions with side effects are passed in as arguments
@@ -609,7 +634,7 @@ class DeltaBot(object):
                 old_content = re.sub("([0-9]+) delta[s]?", flair_count,
                                      old_content)
             except:
-                print "The 'has received' line in the wiki has failed to update."
+                print ("The 'has received' line in the wiki has failed to update.")
             # compile regex to search for current link formatting
             # only matches links that are correctly formatted, so will not be
             # broken by malformed or links made by previous versions of DeltaBot
@@ -730,10 +755,10 @@ class DeltaBot(object):
                 if self.changes_made:
                     self.update_scoreboard()
             except:
-                print "Exception in user code:"
-                print '-'*60
+                print ("Exception in user code:")
+                print ('-'*60)
                 traceback.print_exc(file=sys.stdout)
-                print '-'*60
+                print ('-'*60)
 
             if self.scanned_comments and old_comment_id is not self.scanned_comments[-1]:
                 write_saved_id(self.config.last_comment_filename,
@@ -742,8 +767,8 @@ class DeltaBot(object):
             logging.info("Iteration complete at %s" % (self.scanned_comments[-1] if
                                                        self.scanned_comments else "None"))
             reset_counter = reset_counter + 1
-            print "Reset Counter at %s." % reset_counter
-            print "When this reaches 10, the script will clear its history."
+            print ("Reset Counter at %s." % reset_counter)
+            print ("When this reaches 10, the script will clear its history.")
             if reset_counter == 10:
               self.scanned_comments.clear()
               reset_counter = 0

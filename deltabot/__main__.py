@@ -7,7 +7,6 @@ def sandbox():
     #FOR TESTING. Put whatever here.
     bot = deltabot.DeltaBot()
 
-
 def main():
     c   = config.Config(os.getcwd() + '/config/config.json')
     bot = deltabot.DeltaBot(c)

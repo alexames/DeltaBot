@@ -1,7 +1,8 @@
 import json
 import os
 
-# This object holds the configuration options for the bot
+# This object holds the configuration options for the bot,
+# except that the first layer of keys are attributes, not dict keys
 class Config(object):
 
     def __init__(self, configFile):
