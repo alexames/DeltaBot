@@ -58,7 +58,7 @@ def flair_sorter(dic):
 
 def skippable_line(line):
     """ Returns true if the given line is a quote or code """
-    return re.search('(^    |^ *&gt;)', line) != None
+    return re.search('(^    |^ *&gt;)', line) is not None
 
 
 def str_contains_token(text, tokens):
