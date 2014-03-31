@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-
+"""
 ################################################################################
 #                                                                              #
 # Copyright 2013: Acebulf, alexames, PixelOrange, Snorrrlax, vaetrus, yaworsw  #
@@ -22,7 +22,7 @@
 # along with Deltabot.  If not, see <http://www.gnu.org/licenses/>.            #
 #                                                                              #
 ################################################################################
-
+"""
 
 import re
 import os
@@ -67,7 +67,7 @@ def str_contains_token(text, tokens):
     lines = text.split('\n')
     in_quote = False
     for line in lines:
-        if not line: # Empty string
+        if not line:  # Empty string
             in_quote = False
         if in_quote:
             continue
@@ -181,14 +181,12 @@ class DeltaBot(object):
                 return True
         return False
 
-
     def award_points(self, awardee, comment):
         """ Awards a point. """
         logging.info("Awarding point to %s" % awardee)
         self.adjust_point_flair(awardee)
         self.update_monthly_scoreboard(awardee, comment)
         self.update_wiki_tracker(comment)
-
 
     def get_this_months_scoreboard(self, date):
         page_title = "scoreboard_%s_%s" % (date.year, date.month)
@@ -199,7 +197,6 @@ class DeltaBot(object):
         except:
             page_text = ""
         return markdown_to_scoreboard(page_text)
-
 
     def update_monthly_scoreboard(self, redditor, comment, num_points=1):
         logging.info("Updating monthly scoreboard")
@@ -218,7 +215,6 @@ class DeltaBot(object):
         self.reddit.edit_wiki_page(self.config.subreddit, page_title,
                                    scoreboard_to_markdown(scoreboard),
                                    "Updating monthly scoreboard")
-
 
     def adjust_point_flair(self, redditor, num_points=1):
         """ Recalculate a user's score and update flair. """
@@ -245,10 +241,8 @@ class DeltaBot(object):
                                  self.config.flair['point_text'] % points,
                                  css_class)
 
-
     def is_comment_too_short(self, comment):
         return len(comment.body) < self.minimum_comment_length
-
 
     def already_replied(self, comment, test=False):
         """ Returns true if Deltabot has replied to this comment """
@@ -270,13 +264,11 @@ class DeltaBot(object):
                     return False
         return False
 
-
     def is_parent_commenter_author(self, comment, parent):
         """ Returns true if the author of the parent comment the submitter """
         comment_author = parent.author
         post_author = comment.submission.author
         return comment_author == post_author
-
 
     def points_already_awarded_to_ancestor(self, comment, parent):
         """ Returns true if a point was awarded by the comment's author already
@@ -294,7 +286,6 @@ class DeltaBot(object):
 
         return False
 
-
     # Functions with side effects are passed in as arguments
     # When testing, these can be replaced with mocks or "dummy functions"
     def scan_comment(self, comment, parent,
@@ -303,8 +294,8 @@ class DeltaBot(object):
                      check_points_already_awarded_to_ancestor,
                      strict=True):
         logging.info("Scanning comment reddit.com/r/%s/comments/%s/c/%s by %s" %
-                    (self.config.subreddit, comment.submission.id, comment.id,
-                    comment.author.name if comment.author else "[deleted]"))
+                     (self.config.subreddit, comment.submission.id, comment.id,
+                      comment.author.name if comment.author else "[deleted]"))
 
         # Logs describing the output will be returned so they can be used for testing
         log = ""
@@ -335,12 +326,11 @@ class DeltaBot(object):
             else:
                 awardee = parent.author.name
                 message = self.get_message('confirmation') % (parent.author,
-                    self.config.subreddit, parent.author)
+                                                              self.config.subreddit, parent.author)
         else:
             log = "No points awarded, comment does not contain Delta"
 
-        return (log, message, awardee)
-
+        return log, message, awardee
 
     # Wrapper function to keep side effects out of scan_comments
     def scan_comment_wrapper(self, comment, strict=True):
@@ -380,13 +370,12 @@ class DeltaBot(object):
         logging.info("Scanning new comments")
 
         fresh_comments = self.subreddit.get_comments(params={'before': self.get_most_recent_comment()},
-                                                    limit=None)
+                                                     limit=None)
 
         for comment in fresh_comments:
             self.scan_comment_wrapper(comment)
             if not self.scanned_comments or comment.name > self.scanned_comments[-1]:
                 self.scanned_comments.append(comment.name)
-
 
     def command_add(self, message_body, strict):
         ids = re.findall(self.comment_id_regex, message_body)
@@ -395,12 +384,10 @@ class DeltaBot(object):
             if type(comment) is praw.objects.Comment:
                 self.scan_comment_wrapper(comment, strict=strict)
 
-
     def is_moderator(self, name):
         moderators = self.reddit.get_moderators(self.config.subreddit)
         mod_names = [mod.name for mod in moderators]
         return name in mod_names
-
 
     def scan_message(self, message):
         logging.info("Scanning message %s from %s" % (message.name,
@@ -448,13 +435,13 @@ class DeltaBot(object):
 
         if (self.string_matches_message(bots_comment.body, 'too_little_text',
                                         awardee)
-                and not self.is_comment_too_short(orig_comment)
-                and not self.is_parent_commenter_author(orig_comment, awardees_comment)
-                and not self.points_already_awarded_to_ancestor(orig_comment, awardees_comment)):
+            and not self.is_comment_too_short(orig_comment)
+            and not self.is_parent_commenter_author(orig_comment, awardees_comment)
+            and not self.points_already_awarded_to_ancestor(orig_comment, awardees_comment)):
             self.award_points(awardee, orig_comment)
             message = self.get_message('confirmation') % (
-                          awardee, self.config.subreddit, awardee
-                          )
+                awardee, self.config.subreddit, awardee
+            )
             bots_comment.edit(message).distinguish()
 
     # Keeps side effects out of rescan_comment to make testing easier
@@ -465,12 +452,11 @@ class DeltaBot(object):
         self.rescan_comment(bots_comment, orig_comment, awardees_comment)
 
     def rescan_comments(self, message_body):
-        ids = re.findall(self.comment_id_regex, message_body)
-        for id in ids:
-            comment = self.reddit.get_info(thing_id='t1_%s' % id)
+        comment_ids = re.findall(self.comment_id_regex, message_body)
+        for comment_id in comment_ids:
+            comment = self.reddit.get_info(thing_id='t1_%s' % comment_id)
             if type(comment) is praw.objects.Comment:
                 self.rescan_comment_wrapper(comment)
-
 
     def scan_comment_reply(self, comment):
         logging.info("Scanning comment reply from %s" % comment.author.name)
@@ -484,7 +470,6 @@ class DeltaBot(object):
 
         if valid_commenter:
             self.rescan_comment_wrapper(bots_comment)
-
 
     def scan_inbox(self):
         """ Scan a given list of messages for commands. If no list arg,
@@ -501,10 +486,8 @@ class DeltaBot(object):
 
             message.mark_as_read()
 
-
     def scan_mod_mail(self):
         pass
-
 
     def update_scoreboard(self):
         """ Update the top 10 list with highest scores. """
@@ -522,9 +505,9 @@ class DeltaBot(object):
 
         for i in range(1, 10):
             table_entry = self.config.scoreboard['table_entry'] % (
-                i+1, top_scores[i]['user'], top_scores[i]['flair_text'],
+                i + 1, top_scores[i]['user'], top_scores[i]['flair_text'],
                 self.config.subreddit, top_scores[i]['user']
-                )
+            )
             score_table.append(table_entry)
 
         settings = self.subreddit.get_settings()
@@ -533,14 +516,13 @@ class DeltaBot(object):
         # Don't use said token for anything other than dividing sections
         # or else this breaks.
         split_desc = old_desc.split("_____")
-        split_desc[len(split_desc)-1] = "".join(score_table)
+        split_desc[len(split_desc) - 1] = "".join(score_table)
         new_desc = ""
         for section in split_desc:
             if section != split_desc[0]:
                 new_desc = new_desc + "_____" + section.replace("&amp;", "&")
         self.subreddit.update_settings(description=new_desc)
         self.changes_made = False
-
 
     def get_top_ten_scores(self):
         """ Get a list of the top 10 scores. """
@@ -550,7 +532,6 @@ class DeltaBot(object):
         while len(flair_list) < 10:
             flair_list.append({'user': 'none', 'flair_text': 'no score'})
         return flair_list[0:10]
-
 
     def get_top_ten_scores_this_month(self):
         """ Get a list of the top 10 scores this month """
@@ -568,14 +549,14 @@ class DeltaBot(object):
             score_list.append({'user': 'none', 'flair_text': 'no score'})
         return score_list[0:10]
 
-
     def update_wiki_tracker(self, comment):
-        logging.info("Updating wiki")
         """ Update wiki page of person earning the delta
 
             Note: comment passed in is the comment awarding the delta,
             parent comment is the one earning the delta
         """
+        logging.info("Updating wiki")
+
         comment_url = comment.permalink
         submission_url = comment.submission.permalink
         submission_title = comment.submission.title
@@ -589,7 +570,7 @@ class DeltaBot(object):
             if flair_count == "1":
                 flair_count = "1 delta"
             else:
-                flair_count = flair_count + " deltas"
+                flair_count += " deltas"
         awarder_name = comment.author.name
         today = datetime.date.today()
 
@@ -613,7 +594,7 @@ class DeltaBot(object):
             # broken by malformed or links made by previous versions of DeltaBot
             regex = re.compile("\\* \\[%s\\]\\(%s\\) \\(\d+\\)" % (
                 re.escape(submission_title), re.escape(submission_url)
-                ))
+            ))
             # search old page content for link
             old_link = regex.search(old_content)
 
@@ -626,14 +607,14 @@ class DeltaBot(object):
                 new_link = re.sub(
                     "\((\d+)\)",
                     lambda match: "(" + str(int(match.group(1)) + 1) + ")",
-                                  old_link.group(0)
-                    )
+                    old_link.group(0)
+                )
 
                 # insert link to new delta
                 new_link += "\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (
                     awarder_name, comment_url + "?context=2",
                     today.month, today.day, today.year
-                    )
+                )
 
                 #use re.sub to replace old link with new link
                 new_content = re.sub(regex, new_link, old_content)
@@ -646,12 +627,12 @@ class DeltaBot(object):
                 # "(1)" is the number of deltas earned from that comment
                 # (1 because this is the first delta the user has earned)
                 add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title,
-              submission_url,
-              awarder_name,
-              comment_url + "?context=2",
-              today.month,
-              today.day,
-              today.year)
+                                                                                              submission_url,
+                                                                                              awarder_name,
+                                                                                              comment_url + "?context=2",
+                                                                                              today.month,
+                                                                                              today.day,
+                                                                                              today.year)
 
                 # get previous content as markdown string and append new content
                 new_content = user_wiki_page.content_md + add_link
@@ -673,10 +654,11 @@ class DeltaBot(object):
             # "(1)" is the number of deltas earned from that comment
             # (1 because this is the first delta the user has earned)
             add_link = "\n\n* [%s](%s) (1)\n    1. [Awarded by /u/%s](%s) on %s/%s/%s" % (submission_title,
-          submission_url,
-          awarder_name,
-          comment_url + "?context=2",
-          today.month, today.day, today.year)
+                                                                                          submission_url,
+                                                                                          awarder_name,
+                                                                                          comment_url + "?context=2",
+                                                                                          today.month, today.day,
+                                                                                          today.year)
 
             # combine header and link
             full_update = initial_text + add_link
@@ -691,17 +673,17 @@ class DeltaBot(object):
 
             # get delta tracker wiki page
             delta_tracker_page = self.reddit.get_wiki_page(
-                                                          self.config.subreddit,
-                                                          "delta_tracker")
+                self.config.subreddit,
+                "delta_tracker")
 
             # retrieve delta tracker page content as markdown string
             delta_tracker_page_body = delta_tracker_page.content_md
 
             # create link to user's wiki page as markdown list item
             new_link = "\n\n* /u/%s -- [Delta List](/r/%s/wiki/%s)" % (
-                                                          parent_author,
-                                                          self.config.subreddit,
-                                                          parent_author)
+                parent_author,
+                self.config.subreddit,
+                parent_author)
 
             # append new link to old content
             new_content = delta_tracker_page_body + new_link
@@ -711,7 +693,6 @@ class DeltaBot(object):
                                        "delta_tracker",
                                        new_content,
                                        "Updated tracker page.")
-
 
     def go(self):
         """ Start DeltaBot. """
@@ -729,9 +710,9 @@ class DeltaBot(object):
                     self.update_scoreboard()
             except:
                 print "Exception in user code:"
-                print '-'*60
+                print '-' * 60
                 traceback.print_exc(file=sys.stdout)
-                print '-'*60
+                print '-' * 60
 
             if self.scanned_comments and old_comment_id is not self.scanned_comments[-1]:
                 write_saved_id(self.config.last_comment_filename,
@@ -743,7 +724,7 @@ class DeltaBot(object):
             print "Reset Counter at %s." % reset_counter
             print "When this reaches 10, the script will clear its history."
             if reset_counter == 10:
-              self.scanned_comments.clear()
-              reset_counter = 0
+                self.scanned_comments.clear()
+                reset_counter = 0
             logging.info("Sleeping for %s seconds" % self.config.sleep_time)
             time.sleep(self.config.sleep_time)
