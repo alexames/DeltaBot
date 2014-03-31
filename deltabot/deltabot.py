@@ -89,8 +89,11 @@ def write_saved_id(filename, the_id):
 def read_saved_id(filename):
     """ Get the last comment's ID from file. """
     with open(filename, 'r') as _file:
-        current = _file.readline()
-        return current if current != 'None' else 'None'
+        try:
+            current = _file.readline()
+            return current if current != 'None' else 'None'
+        except IOError:
+            return None
 
 
 def markdown_to_scoreboard(text):
@@ -147,11 +150,7 @@ class DeltaBot(object):
                                 self.config.subreddit + '/comments/[\d\w]+(?:/[^/]+)/?([\d\w]+)'
         self.scanned_comments = collections.deque([], 10)
 
-        try:
-            most_recent_comment_id = read_saved_id(self.config.last_comment_filename)
-        except IOError:
-            logging.error("The 'last comment' file does not exist. Check the config.")
-            raise
+        most_recent_comment_id = read_saved_id(self.config.last_comment_filename)
 
         if most_recent_comment_id is not None:
             self.scanned_comments.append(most_recent_comment_id)
