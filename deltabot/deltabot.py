@@ -750,7 +750,7 @@ class DeltaBot(object):
 
             logging.info("Iteration complete at %s" % (self.scanned_comments[-1] if
                                                        self.scanned_comments else "None"))
-            reset_counter = reset_counter + 1
+            reset_counter += + 1
             print("Reset Counter at %s." % reset_counter)
             print("When this reaches 10, the script will clear its history.")
             if reset_counter == 10:
