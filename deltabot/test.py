@@ -32,7 +32,7 @@ import config
 import deltabot
 from praw_mocks import *
 
-test_config = config.Config('/'.join(os.getcwd().split('/')[:-1]) + '/config/config.json')
+test_config = config.Config(os.getcwd() + '/config/config.json')
 logging.getLogger('requests').setLevel(logging.WARNING)
 
 
