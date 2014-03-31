@@ -43,7 +43,7 @@ def test_suite():
 
 class DeltaBotTestCase(unittest.TestCase):
     def setUp(self):
-        self.bot = deltabot.DeltaBot(testConfig, test=True, test_reddit=Reddit())
+        self.bot = deltabot.DeltaBot(config=test_config, reddit=Reddit())
 
 class TestScanComment(DeltaBotTestCase):
     def test_correctly_awards_delta(self):
