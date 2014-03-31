@@ -95,12 +95,10 @@ def read_saved_id(filename):
     """ Get the last comment's ID from file. """
     logging.debug("Reading ID from file %s" % filename)
     try:
-        #id_file = open(filename, 'r')
         with open(filename, 'r') as id_file:
             current = id_file.readline()
             if current == "None":
                 current = None
-        #id_file.close()
         return current
     except IOError:
         return None
