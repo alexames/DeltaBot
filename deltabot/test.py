@@ -60,11 +60,16 @@ class TestScanComment(DeltaBotTestCase):
                                                   check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
 
-        testMessages = [(m + testConfig.messages['append_to_all_messages'])  % (parent.author,
-                    testConfig.subreddit, parent.author) for m in testConfig.messages['confirmation']]
 
         self.assertEqual(log,"", "Did not properly award a delta: %s" % log)
         self.assertIn(message, testMessages, "Did not properly award a delta, sent wrong message: %s" % message)
+        test_messages = []
+        for confirmation_message in test_config.messages['confirmation']:
+            test_message = (confirmation_message +
+                            test_config.messages['append_to_all_messages']) % (parent.author,
+                                                                               test_config.subreddit,
+                                                                               parent.author)
+            test_messages.append(test_message)
         self.assertEqual(awardee, parent.author.name, "Did not properly award a delta, awardee: %s" % awardee)
 
         # Comment must contain be long enough but NOT contain a delta
@@ -150,7 +155,10 @@ class TestScanComment(DeltaBotTestCase):
                                                   check_points_already_awarded_to_ancestor=lambda c, p:True,
                                                   strict=True)
 
-        testMessages = [(m + testConfig.messages['append_to_all_messages'])  % parent.author for m in testConfig.messages['already_awarded']]
+        test_messages = []
+        for already_awarded_message in test_config.messages['already_awarded']:
+            test_message = (already_awarded_message + test_config.messages['append_to_all_messages']) % parent.author
+            test_messages.append(test_message)
 
         self.assertEqual(log,"No points awarded, already awarded", "Did not properly recognize an award to descendent: %s" % log)
         self.assertIn(message, testMessages, "Did not properly recognize an award to descendent, sent wrong message: %s" % message)
@@ -169,7 +177,10 @@ class TestScanComment(DeltaBotTestCase):
                                                   check_points_already_awarded_to_ancestor=lambda c, p: False,
                                                   strict=True)
 
-        testMessages = [(m + testConfig.messages['append_to_all_messages'])  % parent.author for m in testConfig.messages['too_little_text']]
+        test_messages = []
+        for too_little_message in test_config.messages['too_little_text']:
+            test_message = (too_little_message + test_config.messages['append_to_all_messages']) % parent.author
+            test_messages.append(test_message)
 
         self.assertEqual(log,"No points awarded, too short", "Did not properly recognize a short comment: %s" % log)
         self.assertIn(message, testMessages, "Did not properly recognize a short comment, sent wrong message: %s" % message)
