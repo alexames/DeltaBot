@@ -340,9 +340,13 @@ class DeltaBot(object):
 
         if str_contains_token(comment.body, self.config.tokens) or not strict:
             parent_author = str(parent.author.name).lower()
+            comment_author = str(comment.author.name).lower()
             me = self.config.account['username'].lower()
             if parent_author == me:
                 log = "No points awarded, replying to DeltaBot"
+            
+            elif parent_author == comment_author:
+                log = "No points awarded, user replied to self"
 
             elif check_already_replied(comment):
                 log = "No points awarded, already replied"
