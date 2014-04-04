@@ -93,7 +93,7 @@ class TestScanComment(DeltaBotTestCase):
     def test_checking_author(self):
         """2.1 - The parent is OP, DeltaBot or the awarder."""
 
-        #Test with reply to OP
+        # Test with reply to OP
         comment = Comment(body=test_config.tokens[0] + "a" * self.bot.minimum_comment_length)
         parent = Comment(author=Author(name='Someone'))
 
@@ -111,7 +111,7 @@ class TestScanComment(DeltaBotTestCase):
                       "Did not properly recognize a reply to OP, sent wrong message: %s" % message)
         self.assertIsNone(awardee, "Did not properly recognize a reply to OP, awardee: %s" % awardee)
 
-        #Test with reply to DeltaBot
+        # Test with reply to DeltaBot
         comment = Comment(body=test_config.tokens[0] + "a" * self.bot.minimum_comment_length)
         parent = Comment(author=Author(name=test_config.account['username']))
 
@@ -262,6 +262,3 @@ class TestIsCommentTooShort(DeltaBotTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-

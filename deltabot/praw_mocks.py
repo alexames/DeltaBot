@@ -2,6 +2,7 @@
 import random
 import string
 
+
 def reddit_id(length=6):
     """Emulate a reddit id with a random string of letters and digits"""
     return ''.join(random.choice(string.ascii_lowercase +
@@ -47,9 +48,11 @@ class Reddit(object):
             s.comments.append(self._get_sub_comment)
         return s
 
+
 class Subreddit(object):
     def __init__(self):
         pass
+
 
 class Repliable(object):
     def __init__(self, author=None, body='', reddit_session=None, replies=[]):
@@ -65,6 +68,7 @@ class Repliable(object):
         self._replied_to = True
         self._reply_text = text
 
+
 class Author(object):
     def __init__(self, name=''):
         self.name = name
@@ -78,14 +82,17 @@ class Author(object):
     def __str__(self):
         return self.name
 
+
 class Message(Repliable):
     def __init__(self, *args,  **kwargs):
         Repliable.__init__(self, *args, **kwargs)
         self.was_comment = False
 
+
 class Submission(Repliable):
     def __init__(self, *args,  **kwargs):
         Repliable.__init__(self, *args, **kwargs)
+
 
 class Comment(Repliable):
     def __init__(self, *args, **kwargs):
@@ -95,6 +102,7 @@ class Comment(Repliable):
         self._edited = False
         self._edit_text = ''
         self.submission = Submission()
+
     def edit(self, text):
         self._edited = True
         self._edit_text = text
