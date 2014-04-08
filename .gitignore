@@ -13,3 +13,4 @@ config/config.json
 prev_id.txt
 /.project
 /.pydevproject
+*.out
