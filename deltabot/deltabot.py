@@ -527,14 +527,16 @@ class DeltaBot(object):
         today = datetime.datetime.utcnow()
         top_1_css = self.config.flair['top1']
         top_10_css = self.config.flair['top10']
+        top_scores = self.get_top_ten_scores_for_date(today)
 
         ### Remove special css classes from last month
         last_month = datetime.datetime(day=1,month=today.month,year=today.year) - datetime.timedelta(days=1)
         last_month_scores = self.get_top_ten_scores_for_date(last_month)
         for score in last_month_scores:
-            current_css = self.subreddit.get_flair(score['user'])['flair_css_class']
+            redditor = score['user']
+            current_css = self.subreddit.get_flair(redditor)['flair_css_class']
             new_css = current_css.replace(top_1_css, '').replace(top_10_css, '').strip()
-            self.subreddit.set_flair(score['user'],flair_css_class=new_css)
+            self.subreddit.set_flair(redditor,flair_css_class=new_css)
 
         ### Set special css class for top user
         top_redditor = top_scores[0]['user']
