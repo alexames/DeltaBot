@@ -538,6 +538,14 @@ class DeltaBot(object):
             new_css = current_css.replace(top_1_css, '').replace(top_10_css, '').strip()
             self.subreddit.set_flair(redditor,flair_css_class=new_css)
 
+        ### Remove special css classes from this month
+        ### so that changes are reflected on every update
+        for score in top_scores:
+            redditor = score['user']
+            current_css = self.subreddit.get_flair(redditor)['flair_css_class']
+            new_css = current_css.replace(top_1_css, '').replace(top_10_css, '').strip()
+            self.subreddit.set_flair(redditor,flair_css_class=new_css)
+
         ### Set special css class for top user
         top_redditor = top_scores[0]['user']
         top_1_current = self.subreddit.get_flair(top_redditor)['flair_css_class']
