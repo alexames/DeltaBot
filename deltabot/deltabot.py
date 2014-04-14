@@ -200,7 +200,8 @@ class DeltaBot(object):
         self.update_monthly_scoreboard(awardee, comment)
         self.update_wiki_tracker(comment)
 
-    def get_this_months_scoreboard(self, date):
+    def get_scoreboard_for_date(self,date):
+        """ Return the scoreboard appropriate for the given date"""
         page_title = "scoreboard_%s_%s" % (date.year, date.month)
         try:
             scoreboard_page = self.reddit.get_wiki_page(self.config.subreddit,
@@ -209,6 +210,10 @@ class DeltaBot(object):
         except:
             page_text = ""
         return markdown_to_scoreboard(page_text)
+
+    # Keeping this here for compatibility
+    def get_this_months_scoreboard(self, date):
+        return get_scoreboard_for_date(date)
 
     def update_monthly_scoreboard(self, redditor, comment, num_points=1):
         logging.info("Updating monthly scoreboard")
@@ -517,11 +522,41 @@ class DeltaBot(object):
     def scan_mod_mail(self):
         pass
 
+    def update_top_ten_css(self):
+        """ Update the flair css for the top ten users """
+        today = datetime.datetime.utcnow()
+        top_1_css = self.config.flair['top1']
+        top_10_css = self.config.flair['top10']
+
+        ### Remove special css classes from last month
+        last_month = datetime.datetime(day=1,month=today.month,year=today.year) - datetime.timedelta(days=1)
+        last_month_scores = self.get_top_ten_scores_for_date(last_month)
+        for score in last_month_scores:
+            current_css = self.subreddit.get_flair(score['user'])['flair_css_class']
+            new_css = current_css.replace(top_1_css, '').replace(top_10_css, '').strip()
+            self.subreddit.set_flair(score['user'],flair_css_class=new_css)
+
+        ### Set special css class for top user
+        top_redditor = top_scores[0]['user']
+        top_1_current = self.subreddit.get_flair(top_redditor)['flair_css_class']
+        if top_1_css not in top_1_current:
+            new_css = '{} {}'.format(top_1_current, top_1_css)
+            self.subreddit.set_flair(top_redditor,flair_css_class=new_css)
+
+        ### Set special css class for top 2-10 users
+        for i in range(1, 10):
+            redditor = top_scores[i]['user']
+            current_css = self.subreddit.get_flair(redditor)['flair_css_class']
+            if top_10_css not in current_css:
+                new_css = '{} {}'.format(current_css,top_10_css)
+                self.subreddit.set_flair(redditor,flair_css_class=new_css)
+
     def update_scoreboard(self):
         """ Update the top 10 list with highest scores. """
         logging.info("Updating scoreboard")
+        self.update_top_ten_css()
         now = datetime.datetime.utcnow()
-        top_scores = self.get_top_ten_scores_this_month()
+        top_scores = self.get_top_ten_scores_for_date(now)
         score_table = [
             "\n\n# Top Ten Viewchangers (%s)" % calendar.month_name[now.month],
             self.config.scoreboard['table_head'],
@@ -561,10 +596,9 @@ class DeltaBot(object):
             flair_list.append({'user': 'none', 'flair_text': 'no score'})
         return flair_list[0:10]
 
-    def get_top_ten_scores_this_month(self):
-        """ Get a list of the top 10 scores this month """
-        date = datetime.datetime.utcnow()
-        scoreboard = self.get_this_months_scoreboard(date)
+    def get_top_ten_scores_for_date(self,date):
+        """ Get a list of the top 10 scores for the given month """
+        scoreboard = self.get_scoreboard_for_date(date)
         score_list = []
         for user, value in scoreboard.iteritems():
             score_list.append({
@@ -576,6 +610,11 @@ class DeltaBot(object):
         while len(score_list) < 10:
             score_list.append({'user': 'none', 'flair_text': 'no score'})
         return score_list[0:10]
+
+    def get_top_ten_scores_this_month(self):
+        """ Get a list of the top 10 scores this month """
+        date = datetime.datetime.utcnow()
+        return get_top_ten_scores_for_date(date)
 
     def update_wiki_tracker(self, comment):
         """ Update wiki page of person earning the delta
