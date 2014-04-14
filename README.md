@@ -1,8 +1,8 @@
 # DeltaBot
 
-Deltabot is a score keeping reddit bot originally designed for [/r/changemyview](http://reddit.com/r/changemyview)
+DeltaBot is a score keeping reddit bot originally designed for [/r/changemyview](http://reddit.com/r/changemyview). If you are thinking about using this code for your own subreddit, or any other purpose, we advise that you use a token that makes sense to you. The delta is an appropriate symbol that was chosen for /r/changemyview because it is often used to represent *change*.
 
-It works by reading a subreddit, looking for specific tokens that denote that a point should be awarded. If it finds one, it awards that user a point by adjusting their flair.
+This bot works by reading a subreddit and looking for specific tokens that denote that a point should be awarded. If it finds one, it acts accordingly by carrying out various jobs that can be found at http://www.reddit.com/r/changemyview/wiki/deltabot. 
 
 ## Usage
 
