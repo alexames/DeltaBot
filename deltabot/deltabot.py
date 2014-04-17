@@ -213,7 +213,7 @@ class DeltaBot(object):
 
     # Keeping this here for compatibility
     def get_this_months_scoreboard(self, date):
-        return get_scoreboard_for_date(date)
+        return self.get_scoreboard_for_date(date)
 
     def update_monthly_scoreboard(self, redditor, comment, num_points=1):
         logging.info("Updating monthly scoreboard")
