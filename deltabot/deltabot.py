@@ -585,8 +585,11 @@ class DeltaBot(object):
         ]
 
         for i in range(1, 10):
+            flair_texts = self.subreddit.get_flair(top_scores[i]['user'])
+            total_deltas = int(flair_texts[:-1])
+
             table_entry = self.config.scoreboard['table_entry'] % (
-                i + 1, top_scores[i]['user'], top_scores[i]['flair_text'],
+                i + 1, top_scores[i]['user'], top_scores[i]['flair_text'], total_deltas
                 self.config.subreddit, top_scores[i]['user']
             )
             score_table.append(table_entry)
@@ -621,7 +624,7 @@ class DeltaBot(object):
         for user, value in scoreboard.iteritems():
             score_list.append({
                 'user': user,
-                'flair_text': self.config.flair['point_text'] % value['score']
+                'flair_text': value['score']
             })
         score_list = sorted(score_list, key=flair_sorter)
         score_list.reverse()

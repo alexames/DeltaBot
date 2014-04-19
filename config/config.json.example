@@ -49,6 +49,6 @@
     "scoreboard": {
         "table_head": "\n\n| Rank | Username | Deltas |\n| :------: | ------ | :------: |",
         "table_leader_entry": "\n| **1** | **/u/%s** | [**%s**](/r/%s/wiki/user/%s \"Delta history.\") |",
-        "table_entry": "\n| %s | /u/%s | [%s](/r/%s/wiki/user/%s \"Delta history.\") |"
+        "table_entry": "\n| %s | /u/%s | %s ([%s](/r/%s/wiki/user/%s \"Delta history.\")) |"
     }
 }
