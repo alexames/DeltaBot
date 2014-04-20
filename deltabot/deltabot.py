@@ -540,6 +540,11 @@ class DeltaBot(object):
             flair = self.subreddit.get_flair(redditor)
             flair_text = flair['flair_text']
             current_css = flair['flair_css_class']
+            print(redditor)
+            print(flair)
+            print(flair_text)
+            print(current_css)
+            stuff = raw_input("Wait")
             new_css = current_css.replace(top_1_css, '').replace(top_10_css, '').strip()
             self.subreddit.set_flair(redditor,flair_text=flair_text,flair_css_class=new_css)
 
@@ -607,8 +612,6 @@ class DeltaBot(object):
         for section in split_desc:
             if section != split_desc[0]:
                 new_desc = new_desc + "_____" + section.replace("&amp;", "&")
-        print(new_desc)
-        input = raw_input("wait")
         self.subreddit.update_settings(description=new_desc)
         self.changes_made = False
 
