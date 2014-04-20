@@ -45,7 +45,6 @@ except ImportError:  # Python 3
 
 logging.getLogger('requests').setLevel(logging.WARNING)
 
-
 def get_first_int(string):
     """ Returns the first integer in the string"""
     match = re.search('(\d+)', string)
@@ -56,7 +55,7 @@ def flair_sorter(dic):
     """ Get numeric value from flair. """
     num = dic['flair_text']
     if num:
-        return get_first_int(num)
+        return num
     else:
         return 0
 
@@ -403,7 +402,7 @@ class DeltaBot(object):
         logging.info("Scanning new comments")
 
         fresh_comments = self.subreddit.get_comments(params={'before': self.get_most_recent_comment()},
-                                                     limit=None)
+                                                     limit=5)
 
         for comment in fresh_comments:
             self.scan_comment_wrapper(comment)
@@ -537,7 +536,7 @@ class DeltaBot(object):
             flair = self.subreddit.get_flair(redditor)
             flair_text = flair['flair_text'] 
             current_css = flair['flair_css_class']
-            new_css = current_css.replace(top_1_css, '').replace(top_10_css, '').strip()
+            new_css = current_css #.replace(top_1_css, '').replace(top_10_css, '').strip()
             self.subreddit.set_flair(redditor,flair_text=flair_text,flair_css_class=new_css)
 
         ### Remove special css classes from this month
@@ -589,8 +588,8 @@ class DeltaBot(object):
             total_deltas = int(flair_texts[:-1])
 
             table_entry = self.config.scoreboard['table_entry'] % (
-                i + 1, top_scores[i]['user'], top_scores[i]['flair_text'], total_deltas
-                self.config.subreddit, top_scores[i]['user']
+                i + 1, top_scores[i]['user'], top_scores[i]['flair_text'],
+                total_deltas,self.config.subreddit, top_scores[i]['user']
             )
             score_table.append(table_entry)
 
