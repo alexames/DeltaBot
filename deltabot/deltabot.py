@@ -388,11 +388,15 @@ class DeltaBot(object):
         most_recent_comment_id = None
         while self.scanned_comments:
             comment = self.reddit.get_info(thing_id=self.scanned_comments[-1])
-            if comment.body == '[deleted]':
-                self.scanned_comments.pop()
+            if comment is not None:
+				if comment.body == '[deleted]':
+					self.scanned_comments.pop()
+				else:
+					most_recent_comment_id = self.scanned_comments[-1]
+					break
             else:
-                most_recent_comment_id = self.scanned_comments[-1]
-                break
+				most_recent_comment_id = self.scanned_comments[-1]
+				break
 
         return most_recent_comment_id
 
@@ -402,7 +406,7 @@ class DeltaBot(object):
         logging.info("Scanning new comments")
 
         fresh_comments = self.subreddit.get_comments(params={'before': self.get_most_recent_comment()},
-                                                     limit=5)
+                                                     limit=None)
 
         for comment in fresh_comments:
             self.scan_comment_wrapper(comment)
@@ -534,9 +538,9 @@ class DeltaBot(object):
         for score in last_month_scores:
             redditor = score['user']
             flair = self.subreddit.get_flair(redditor)
-            flair_text = flair['flair_text'] 
+            flair_text = flair['flair_text']
             current_css = flair['flair_css_class']
-            new_css = current_css #.replace(top_1_css, '').replace(top_10_css, '').strip()
+            new_css = current_css.replace(top_1_css, '').replace(top_10_css, '').strip()
             self.subreddit.set_flair(redditor,flair_text=flair_text,flair_css_class=new_css)
 
         ### Remove special css classes from this month
@@ -555,7 +559,7 @@ class DeltaBot(object):
         flair_text = flair['flair_text'] 
         top_1_current = flair['flair_css_class']
         if top_1_css not in top_1_current:
-            new_css = '{} {}'.format(top_1_current, top_1_css)
+            new_css = '{0} {1}'.format(top_1_current, top_1_css)
             self.subreddit.set_flair(top_redditor,flair_text=flair_text,flair_css_class=new_css)
 
         ### Set special css class for top 2-10 users
@@ -565,7 +569,7 @@ class DeltaBot(object):
             flair_text = flair['flair_text'] 
             current_css = flair['flair_css_class']
             if top_10_css not in current_css:
-                new_css = '{} {}'.format(current_css,top_10_css)
+                new_css = '{0} {1}'.format(current_css,top_10_css)
                 self.subreddit.set_flair(redditor,flair_text=flair_text,flair_css_class=new_css)
 
     def update_scoreboard(self):
@@ -585,8 +589,7 @@ class DeltaBot(object):
 
         for i in range(1, 10):
             flair_texts = self.subreddit.get_flair(top_scores[i]['user'])
-            total_deltas = int(flair_texts[:-1])
-
+            total_deltas = int(flair_texts["flair_text"][:-1])
             table_entry = self.config.scoreboard['table_entry'] % (
                 i + 1, top_scores[i]['user'], top_scores[i]['flair_text'],
                 total_deltas,self.config.subreddit, top_scores[i]['user']
@@ -604,6 +607,8 @@ class DeltaBot(object):
         for section in split_desc:
             if section != split_desc[0]:
                 new_desc = new_desc + "_____" + section.replace("&amp;", "&")
+        print(new_desc)
+        input = raw_input("wait")
         self.subreddit.update_settings(description=new_desc)
         self.changes_made = False
 
