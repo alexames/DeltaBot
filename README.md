@@ -1,3 +1,7 @@
+# Deprecated
+
+This version of DeltaBot has been deprecated. For the newest version, please see http://github.com/PixelOrange/MARS.
+
 # DeltaBot
 
 DeltaBot is a score keeping reddit bot originally designed for [/r/changemyview](http://reddit.com/r/changemyview). If you are thinking about using this code for your own subreddit, or any other purpose, we advise that you use a token that makes sense to you. The delta is an appropriate symbol that was chosen for /r/changemyview because it is often used to represent *change*.
